@@ -222,6 +222,15 @@ const hudEl = $<HTMLDivElement>("#hud");
 const statusEl = $<HTMLParagraphElement>("#status");
 const pbidEl = $<HTMLInputElement>("#pbid");
 
+/** Bônus extra de uma rolagem (ex.: o mestre concedeu +1 pela interpretação). Vale só para a próxima. */
+let extraValue = "";
+const extraInputs: HTMLInputElement[] = [];
+const extraBonus = () => parseInt(extraValue, 10) || 0;
+function resetExtra() {
+  extraValue = "";
+  for (const i of extraInputs) i.value = "";
+}
+
 const target = () => {
   const n = parseInt(targetValue, 10);
   return Number.isFinite(n) ? n : undefined;
@@ -258,9 +267,12 @@ function rollButton(
   b.append(el("span", "lbl", label), n);
   if (extra) b.append(el("span", "rank", extra));
   b.addEventListener("click", () => {
-    if (custom) custom(value);
+    const x = extraBonus();
+    resetExtra();
+    if (custom) custom(value + x);
     else {
-      void publishRoll({ title, count: 1, sides: 20, mod: value, dc: target() }).then((msg) =>
+      const t = x ? `${title} (bônus extra ${signed(x)})` : title;
+      void publishRoll({ title: t, count: 1, sides: 20, mod: value + x, dc: target() }).then((msg) =>
         showCard({ kind: "check", msg }),
       );
     }
@@ -634,17 +646,10 @@ async function beginAttack(
   consume?: () => void,
   rangeFeet?: number,
 ) {
-  const manual = target();
-  const penalty = mapFor(attackNumber);
-  if (manual !== undefined) {
-    // Alvo digitado à mão: só rola contra aquela CA.
-    consume?.();
-    attackNumber += 1;
-    const msg = await publishRoll({ title, count: 1, sides: 20, mod: bonus - penalty, dc: manual });
-    void showCard({ kind: "check", msg });
-    if (current) renderSheet(current);
-    return;
-  }
+  // O alvo de um ataque é sempre um token escolhido no mapa; o bônus extra vale para este ataque.
+  const x = extraBonus();
+  resetExtra();
+  bonus += x;
   const startSelection = ((await OBR.player.getSelection()) ?? []).join(",");
   setTargeting({ kind: "attack", title, bonus, damage, startSelection, consume, rangeFeet });
 }
@@ -837,6 +842,34 @@ function grid(...children: HTMLElement[]): HTMLElement {
 
 let current: Character | null = null;
 
+/** Ajustes manuais: o jogador corrige dados errados ou soma efeitos que o sistema não detecta. */
+function adjustBlock(c: Character): HTMLElement {
+  const note = el("p", "sub", "Some ou subtraia valores quando o sistema não souber de algo (um local que dá +1 de CA, um dado do Pathbuilder errado). Fica salvo na sala.");
+  const rows: HTMLElement[] = [note];
+  const field = (label: string, key: "ac" | "hp", base: () => number) => {
+    const row = el("div", "import");
+    const lab = el("label", "target", `${label} `);
+    const input = el("input");
+    input.type = "number";
+    input.placeholder = "0";
+    input.value = state.adj?.[key] ? String(state.adj[key]) : "";
+    const hint = el("span", "sub", ` (ficha: ${base()})`);
+    input.addEventListener("change", () => {
+      const n = parseInt(input.value, 10) || 0;
+      const adj = { ...(state.adj ?? {}), [key]: n };
+      if (!n) delete adj[key];
+      state.adj = Object.keys(adj).length > 0 ? adj : undefined;
+      commit(c);
+    });
+    lab.append(input, hint);
+    row.append(lab);
+    rows.push(row);
+  };
+  field("Ajuste de CA", "ac", () => c.ac);
+  field("Ajuste de PV máximo", "hp", () => c.hpMax);
+  return section("Ajustes manuais", ...rows);
+}
+
 function tokenBlock(c: Character): HTMLElement {
   const info = el("p", "sub", "Selecione um token no mapa e vincule esta ficha a ele.");
   const msg = el("p", "status");
@@ -885,10 +918,14 @@ let state: CharState = { hp: 0, temp: 0, conditions: {} };
 let targetValue = "";
 
 /** Redesenha a ficha mantendo a rolagem do painel e grava o estado na sala. */
+/** PV máximo e CA base, já com os ajustes manuais do jogador. */
+const maxHp = (c: Character) => hpMaxWithConditions(c.hpMax + (state.adj?.hp ?? 0), c.level, state.conditions);
+const baseAc = (c: Character) => c.ac + (state.adj?.ac ?? 0);
+
 function commit(c: Character) {
-  state.max = hpMaxWithConditions(c.hpMax, c.level, state.conditions);
+  state.max = maxHp(c);
   state.hp = Math.min(state.hp, state.max);
-  state.ac = acWithConditions(c.ac, state.conditions).value;
+  state.ac = acWithConditions(baseAc(c), state.conditions).value;
   const scroll = $("#tab-ficha").parentElement!.scrollTop;
   renderSheet(c);
   $("#tab-ficha").parentElement!.scrollTop = scroll;
@@ -930,7 +967,7 @@ function shieldRow(c: Character): HTMLElement | undefined {
     if (up) clearAcEffect(c, "shield-raised");
     else {
       setAcEffect(c, "shield-raised", bonus);
-      say(`Escudo erguido: CA ${acWithConditions(c.ac, state.conditions).value} até o seu próximo turno.`);
+      say(`Escudo erguido: CA ${acWithConditions(baseAc(c), state.conditions).value} até o seu próximo turno.`);
       void publishEvent(`ergueu o escudo (CA +${bonus}).`);
     }
   });
@@ -939,7 +976,7 @@ function shieldRow(c: Character): HTMLElement | undefined {
 }
 
 function hpBlock(c: Character): HTMLElement {
-  const max = hpMaxWithConditions(c.hpMax, c.level, state.conditions);
+  const max = maxHp(c);
   const hp = Math.min(state.hp, max);
 
   const big = el("div", "hp-big");
@@ -1069,7 +1106,7 @@ function conditionsBlock(c: Character): HTMLElement {
 /** Campo "Alvo (CD/CA)": existe em Agir e em Testes, sempre com o mesmo valor. */
 const targetInputs: HTMLInputElement[] = [];
 function targetField(): HTMLElement {
-  const label = el("label", "target", "Alvo (CD/CA) ");
+  const label = el("label", "target", "CD do teste ");
   const input = el("input");
   input.type = "number";
   input.placeholder = "opcional";
@@ -1083,12 +1120,28 @@ function targetField(): HTMLElement {
   return label;
 }
 
+/** Campo "Bônus extra": soma na próxima rolagem e volta a zero. */
+function extraField(): HTMLElement {
+  const label = el("label", "target", "Bônus extra (próxima rolagem) ");
+  const input = el("input");
+  input.type = "number";
+  input.placeholder = "0";
+  input.value = extraValue;
+  input.addEventListener("input", () => {
+    extraValue = input.value;
+    for (const o of extraInputs) if (o !== input) o.value = extraValue;
+  });
+  extraInputs.push(input);
+  label.append(input);
+  return label;
+}
+
 /** Cabeçalho fixo, visível em todas as abas: nome, PV, CA e condições. Tocar leva à aba Ficha. */
 function renderHud(c: Character) {
   hudEl.replaceChildren();
-  const max = hpMaxWithConditions(c.hpMax, c.level, state.conditions);
+  const max = maxHp(c);
   const hp = Math.min(state.hp, max);
-  const ac = acWithConditions(c.ac, state.conditions);
+  const ac = acWithConditions(baseAc(c), state.conditions);
 
   const who = el("div", "hud-name");
   who.append(el("strong", undefined, c.name), el("span", "sub", `${c.className} ${c.level}`));
@@ -1135,6 +1188,7 @@ function renderSheet(c: Character) {
   testesEl.replaceChildren();
   fichaEl.replaceChildren();
   targetInputs.length = 0;
+  extraInputs.length = 0;
   renderHud(c);
 
   const head = el("div", "head-card");
@@ -1148,20 +1202,20 @@ function renderSheet(c: Character) {
     d.append(el("strong", undefined, String(v)), el("span", undefined, label));
     return d;
   };
-  const ac = acWithConditions(c.ac, state.conditions);
+  const ac = acWithConditions(baseAc(c), state.conditions);
   const acNum = num("CA", ac.value);
   if (ac.penalty > 0 || ac.bonus > 0) {
     if (ac.penalty > ac.bonus) acNum.classList.add("penalized");
-    acNum.title = `Base ${c.ac}${ac.bonus ? `, +${ac.bonus} de escudo` : ""}${ac.penalty ? `, −${ac.penalty} por condições` : ""}`;
+    acNum.title = `Base ${baseAc(c)}${ac.bonus ? `, +${ac.bonus} de escudo` : ""}${ac.penalty ? `, −${ac.penalty} por condições` : ""}`;
   }
   nums.append(acNum, num("Desl.", `${c.speed} ft`), num("CD de classe", c.classDC));
   head.append(nums);
 
-  fichaEl.append(head, hpBlock(c), conditionsBlock(c), tokenBlock(c));
-  agirEl.append(targetField());
+  fichaEl.append(head, hpBlock(c), conditionsBlock(c), adjustBlock(c), tokenBlock(c));
+  agirEl.append(extraField());
   const shield = shieldRow(c);
   if (shield) agirEl.append(shield);
-  testesEl.append(targetField());
+  testesEl.append(targetField(), extraField());
 
   const abilityNames: [keyof Character["abilities"], string][] = [
     ["str", "FOR"],
@@ -1473,8 +1527,8 @@ async function importById(id: string) {
     const stored = await loadState(id).catch(() => undefined);
     state = stored ?? newState(c);
     // Garante PV máx. e CA no estado e grava na sala: sem isso, o token vinculado não mostra a barra.
-    state.max = hpMaxWithConditions(c.hpMax, c.level, state.conditions);
-    state.ac = acWithConditions(c.ac, state.conditions).value;
+    state.max = maxHp(c);
+    state.ac = acWithConditions(baseAc(c), state.conditions).value;
     if (JSON.stringify(stored) !== JSON.stringify(state)) {
       await saveState(id, state).catch(() => undefined);
     }

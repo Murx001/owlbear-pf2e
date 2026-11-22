@@ -236,3 +236,8 @@ Confira nos dois painéis e nos cartões: fundo escuro com detalhes dourados, t�
 
 ### 27. Alcance das áreas (emanação e explosão)
 Na grade, uma **emanação de 10 pés** cobre **2 casas** em volta do conjurador (um quadrado); a 3ª casa fica de fora. Teste com a Necrotic Bomb: um token **colado** (5 pés) e um a **2 casas** (10 pés) são atingidos; a **3ª casa** (15 pés) e a diagonal da 3ª casa **não**. O conjurador não é atingido. Uma **explosão de 20 pés** cobre 4 casas a partir do centro; a 5ª fica de fora.
+
+### 28. Bônus extra e ajustes manuais
+1. O campo **Alvo (CD/CA)** saiu da aba Agir: ataques escolhem o alvo pelo **token** no mapa. Na aba **Testes** ele virou **CD do teste** (opcional), para testes de perícia contra uma CD.
+2. **Bônus extra (próxima rolagem)** está em Agir e em Testes (é o mesmo campo). Digite, por exemplo, +2 (ou −1) e role: o bônus entra **só nessa rolagem** e o campo volta a zero. Em testes, o cartão mostra "(bônus extra +2)".
+3. Na aba **Ficha**, o bloco **Ajustes manuais** corrige dados: **Ajuste de CA** (ex.: +1 num lugar que dá bônus de defesa) e **Ajuste de PV máximo**. Mudam a CA no cabeçalho, na ficha, no escudinho do token e a CA usada contra ataques. Apagar o número desfaz o ajuste.

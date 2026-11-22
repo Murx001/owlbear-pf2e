@@ -17,6 +17,8 @@ export interface CharState {
   /** Pontos de foco gastos. */
   focusUsed?: number;
   conditions: Conditions;
+  /** Ajustes manuais do jogador: corrigem dados errados ou efeitos que o sistema não detecta. */
+  adj?: { ac?: number; hp?: number };
   /** Quanto tempo falta para cada condição acabar (só as que têm duração contada). */
   durations?: Durations;
 }
