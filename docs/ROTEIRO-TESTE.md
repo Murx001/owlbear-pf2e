@@ -43,7 +43,7 @@ Os testes com o Owlbear simulado já passaram; este roteiro cobre o que só a sa
 
 **Esperado:** o ataque sai com `−5` e o cartão diz `no próximo ataque: −10`.
 5. Teste também **Cancelar** na pergunta: nada deve ser rolado, e o alvo continua escolhível.
-6. **Rolagem automática (opcional):** como mestre, marque "Mestre: permitir que os jogadores rolem automaticamente" no topo. No jogador aparece "Rolar automaticamente, sem perguntar antes"; marcando, o ataque rola direto e mostra o cartão do mesmo jeito. Desmarcando a permissão no mestre, o jogador volta a ver a pergunta na hora.
+6. **Rolagem automática: removida.** Todo ataque, teste e salvaguarda sempre pergunta antes de rolar (com o contador de bônus).
 
 ## 4. Magia de um alvo (acerto automático e ataque)
 
@@ -176,7 +176,7 @@ Limites: durações longas (1 hora, até o descanso) só aparecem como rótulo; 
 
 ### 18. Abas por tarefa e cabeçalho fixo
 **Reinstale a extensão** (o manifest mudou: o painel ficou mais alto, 600 px).
-1. Abas novas: **Agir** (ataques, magias, foco), **Testes** (atributos, salvaguardas, perícias e dados avulsos), **Ficha** (PV, condições, token, importar, descansar), **Combate** e **Mestre** (só o mestre; criaturas, backup e a permissão de rolagem automática). Antes havia Ficha, Combate, Criaturas e Dados.
+1. Abas novas: **Agir** (ataques, magias, foco), **Testes** (atributos, salvaguardas, perícias e dados avulsos), **Ficha** (PV, condições, token, importar, descansar), **Combate** e **Mestre** (só o mestre; criaturas, backup e backup). Antes havia Ficha, Combate, Criaturas e Dados.
 2. **Cabeçalho fixo** em todas as abas: nome, classe, PV com barra, CA e até 4 condições. Tocar nele abre a aba Ficha.
 3. Sem ficha importada, o painel abre na aba Ficha. Com ficha, abre em **Agir**. Selecionar um token vinculado também leva para Agir.
 4. O campo **Alvo (CD/CA)** aparece em Agir e em Testes e é o mesmo valor nos dois.
@@ -247,14 +247,14 @@ Na grade, uma **emanação de 10 pés** cobre **2 casas** em volta do conjurador
 2. **Escudo da CA** agora fica no **canto inferior direito** do token, encostado na ponta da barra de PV.
 3. **Mestre toca num token de criatura:** vai para a aba Mestre, **abre a seção "Em jogo"** se estiver recolhida, rola até o cartão da criatura, destaca e abre a ficha completa.
 
-### 30. Flanqueio na rolagem automática e criaturas sem dados
-1. Com a **rolagem automática** ligada (liberada pelo mestre e escolhida pelo jogador), a aba Agir mostra a caixa **"Alvo flanqueado no próximo ataque"**. Marcada, o próximo ataque trata o alvo como Desprevenido (−2 na CA) e a caixa desmarca sozinha. O **Bônus extra** também vale nesse modo. Com a pergunta ligada (padrão), o flanqueio continua no cartão de confirmação.
+### 30. Criaturas sem dados
+1. (A rolagem automática foi removida; o flanqueio fica sempre no cartão de confirmação.)
 2. Na aba **Mestre**, em **Em jogo**, aparece um aviso vermelho quando há tokens ligados a criaturas que **não existem neste navegador** (causa do erro "sem dados cadastrados"). O botão **Desvincular esses tokens** limpa o vínculo para vincular de novo a partir do bestiário.
 
 ### 31. Dano personalizado por arma e contador de bônus antes de rolar
 1. Em **Agir > Ataques**, cada arma tem uma engrenagem **⚙**. Ela abre o editor de **modos de dano**: o primeiro é o da ficha; use **+ Novo modo** para criar outros (por exemplo "Duas mãos" 1d12+3, ou "Com Ikon" 1d12+5), com nome e fórmula (`1d12+5 slashing`). Marque o círculo do modo em uso.
 2. O botão **Dano** mostra a fórmula do modo em uso e rola esse dano. O **ataque aplica o dano do modo escolhido sozinho** ao acertar, inclusive o dobro no crítico. Fórmula inválida mostra um aviso e não é salva.
-3. **Perícias, atributos, salvaguardas e Percepção** agora **perguntam antes de rolar** (quando a rolagem automática não está ligada) e têm um **contador de bônus** (− e +, ou digite) para somar ou subtrair só naquela rolagem. O mesmo contador está na confirmação de ataque. O cartão mostra "(bônus +2)".
+3. **Perícias, atributos, salvaguardas e Percepção** agora **perguntam antes de rolar** e têm um **contador de bônus** (− e +, ou digite) para somar ou subtrair só naquela rolagem. O mesmo contador está na confirmação de ataque. O cartão mostra "(bônus +2)".
 
 ### 32. Ícone da ferramenta de área
 O ícone roxo "Área PF2e" **não fica mais na barra de ferramentas**. Ele aparece só enquanto você posiciona uma área de magia (cone, explosão, linha) e some quando a área é posicionada, cancelada (Esc) ou resolvida. O posicionamento funciona igual: clique no mapa, fora do alcance fica vermelho, Esc cancela.
@@ -285,3 +285,14 @@ O ícone roxo "Área PF2e" **não fica mais na barra de ferramentas**. Ele apare
 
 ### 37. O que a condição muda some junto com ela
 Ao acabar a condição (tempo contado na aba Combate, ou removida à mão), a **CA** e o **PV máximo** voltam ao normal na ficha, no cabeçalho, no escudinho do token e para os ataques contra o personagem. Teste: lance Escudo (CA 21 → 22), passe o turno/rodada até a fichinha sumir e confira que a CA voltou a 21 em todo lugar. Vale também para Desprevenido, Caído, Fatigado, Drenado e Escudo erguido. Fichas salvas antes desta versão passam a se corrigir sozinhas quando o personagem faz qualquer ação ou é importado de novo.
+
+### 38. Habilidades das criaturas (mestre)
+1. Criaturas importadas do Foundry trazem suas **habilidades com salvaguarda** já cadastradas (ex.: Breath Weapon: Reflexos CD 30 básica, 12d6 ácido, linha de 80 pés; Frightful Presence: Vontade CD 28, emanação de 90 pés, Amedrontado). Em **Em jogo**, o bloco **Habilidades (automáticas)** lista cada uma com um botão **Usar**.
+2. **Selecione no mapa os alvos** (Shift para vários) e toque em **Usar**: o sistema rola a salvaguarda de cada alvo contra a CD, rola o dano **uma vez** para todos, aplica ×0/×½/×1/×2 (básica) e as **condições** na falha. O cartão aparece para todos; a CA e os PV de criaturas continuam secretos.
+3. **+ Nova habilidade** cadastra à mão: nome, salvaguarda, CD, básica ou não, dano (`12d6 acid`), área (cone, linha, explosão, emanação), condição na falha com valor e duração. O **×** remove.
+4. A área é informativa: o mestre escolhe os alvos selecionando os tokens (a ferramenta de área ainda não é usada nas habilidades).
+
+### 39. Rolagem automática removida e botão Histórico
+1. Não existe mais a opção de rolagem automática (nem para o mestre, nem para o jogador): tudo pergunta antes de rolar.
+2. O botão **Histórico** abre e fecha a barra da direita e **não esconde mais o painel** (antes ele deixava a janela vazia).
+3. O dano de um ataque vai primeiro para os **PV temporários**; por isso um ataque pode "não tirar PV" se o alvo tinha PV temporários (o cartão e o histórico mostram "PV de X: a/b").

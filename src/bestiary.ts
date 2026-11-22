@@ -1,4 +1,4 @@
-import type { Creature, CreatureAttack } from "./creatures";
+import type { Creature, CreatureAbility, CreatureAttack } from "./creatures";
 
 /**
  * Bestiário do mestre: filtros, organização e importação de criaturas do repositório
@@ -90,6 +90,38 @@ const typed = (arr: unknown, withValue: boolean): string[] =>
     .map((x: any) => (withValue && x?.value !== undefined ? `${x.type} ${x.value}` : String(x?.type ?? "")))
     .filter(Boolean);
 
+/**
+ * Lê as habilidades do Foundry que têm salvaguarda com CD fixa (@Check), com dano (@Damage), área
+ * (@Template ou "90 feet.") e condição ("inflicts:frightened"). Descrições sem isso ficam só como nota.
+ */
+export function abilitiesFromFoundry(items: any[]): CreatureAbility[] {
+  const out: CreatureAbility[] = [];
+  for (const i of items) {
+    if (i.type !== "action") continue;
+    const html: string = i.system?.description?.value ?? "";
+    const check = /@Check\[([^\]]*)\]/.exec(html);
+    if (!check) continue;
+    const spec = check[1];
+    const save = /(?:^|\||type:)(fortitude|reflex|will)\b/.exec(spec)?.[1] as CreatureAbility["save"] | undefined;
+    const dc = /dc:(\d+)/.exec(spec)?.[1];
+    if (!save || !dc) continue;
+    const a: CreatureAbility = { name: String(i.name), save, dc: parseInt(dc, 10), basic: /\|basic\b/.test(spec) || /basic:true/.test(spec) };
+    const dmg = /@Damage\[\(?([0-9d+\-\s]+)\)?\[([a-z,\- ]+)\]/i.exec(html);
+    if (dmg) {
+      a.damage = dmg[1].replace(/\s+/g, "");
+      a.damageType = dmg[2].trim();
+    }
+    const tpl = /@Template\[(burst|emanation|cone|line)[^\]]*distance:(\d+)/i.exec(html);
+    const plain = /^\s*<p>\s*(\d+) feet\./i.exec(html);
+    if (tpl) a.area = { kind: tpl[1].toLowerCase() as "burst" | "emanation" | "cone" | "line", feet: parseInt(tpl[2], 10) };
+    else if (plain && /area-effect/.test(spec)) a.area = { kind: "emanation", feet: parseInt(plain[1], 10) };
+    const inflicts = /inflicts:([a-z-]+)/.exec(spec)?.[1];
+    if (inflicts) a.conditions = [{ key: inflicts, value: 1 }];
+    if (a.damage || a.conditions || a.area) out.push(a);
+  }
+  return out;
+}
+
 /** Converte um arquivo NPC do Foundry numa criatura do bestiário. */
 export function foundryToCreature(json: any, id: string, packLabel: string, packDir: string): Creature {
   const s = json.system ?? {};
@@ -131,6 +163,8 @@ export function foundryToCreature(json: any, id: string, packLabel: string, pack
   if (res.length) c.resistances = res;
   if (weak.length) c.weaknesses = weak;
   if (attacks.length) c.attacks = attacks;
+  const abil = abilitiesFromFoundry(json.items ?? []);
+  if (abil.length) c.abilities = abil;
   return c;
 }
 

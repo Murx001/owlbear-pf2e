@@ -133,7 +133,7 @@ export async function sendCreatureSpell(
 }
 
 /** Alvo criatura, lido e gravado no navegador do mestre. */
-function creatureSaveTarget(id: string, fallback: Creature): SaveTarget {
+export function creatureSaveTarget(id: string, fallback: Creature): SaveTarget {
   return {
     name: fallback.name,
     async saveMod(stat) {

@@ -18,6 +18,7 @@ import {
   showOf,
   upsertCreature,
   type Creature,
+  type CreatureAbility,
 } from "./creatures";
 import OBR from "@owlbear-rodeo/sdk";
 import {
@@ -48,6 +49,7 @@ import {
   resetCreatureMap,
 } from "./creatureAttack";
 import { parseDamage } from "./damage";
+import { abilityLabel, useAbility } from "./creatureAbility";
 import { publishRoll, rollDie, signed } from "./roll";
 import {
   CREATURE_KEY,
@@ -594,6 +596,131 @@ export function initCreatures(root: HTMLElement, onRender?: () => void, part: Cr
     return box;
   }
 
+  /* ---------- habilidades da criatura ---------- */
+  const abilityFormOpen = new Set<string>();
+
+  /**
+   * Habilidades com salvaguarda (Sopro, Presença Aterradora…): vêm do Foundry ou o mestre cadastra.
+   * Selecione os alvos no mapa e toque em Usar: o sistema rola a salvaguarda de cada um contra a CD,
+   * aplica o dano (básica: ×0, ×½, ×1, ×2) e as condições na falha.
+   */
+  function abilityBlock(c: Creature): HTMLElement {
+    const box = el("div", "visibility");
+    box.append(el("strong", undefined, "Habilidades (automáticas)"));
+    const list = c.abilities ?? [];
+    if (list.length === 0) {
+      box.append(el("p", "sub", "Nenhuma ainda. Cadastre uma abaixo (CD, salvaguarda, dano, área e condição)."));
+    }
+    list.forEach((a, i) => {
+      const row = el("div", "import");
+      const use = el("button", undefined, `Usar: ${a.name}`);
+      use.type = "button";
+      use.title = abilityLabel(a);
+      use.addEventListener("click", () => void useAbility(c, a, (t) => say(t)));
+      const info = el("span", "sub", abilityLabel(a));
+      info.style.flex = "1";
+      row.append(use, info, button("×", () => {
+        upsertCreature({ ...c, abilities: list.filter((_, k) => k !== i) });
+        render();
+      }, "mini"));
+      box.append(row);
+    });
+    box.append(el("p", "sub", "Selecione no mapa os alvos (Shift para vários) e toque em Usar."));
+
+    const open = abilityFormOpen.has(c.id);
+    box.append(
+      button(open ? "Fechar cadastro" : "+ Nova habilidade", () => {
+        open ? abilityFormOpen.delete(c.id) : abilityFormOpen.add(c.id);
+        render();
+      }),
+    );
+    if (!open) return box;
+
+    const field = (label: string, input: HTMLElement) => {
+      const lab = el("label", "target", `${label} `);
+      lab.append(input);
+      return lab;
+    };
+    const name = el("input");
+    name.placeholder = "Nome (ex.: Sopro de Ácido)";
+    const dc = el("input");
+    dc.type = "number";
+    dc.placeholder = "CD";
+    dc.style.width = "64px";
+    const save = el("select");
+    for (const [k, t] of [["reflex", "Reflexos"], ["fortitude", "Fortitude"], ["will", "Vontade"]]) save.append(new Option(t, k));
+    const basic = el("input");
+    basic.type = "checkbox";
+    basic.checked = true;
+    const basicLab = el("label", "manual-toggle");
+    basicLab.append(basic, " Básica (dano ×0/×½/×1/×2)");
+    const dmg = el("input");
+    dmg.placeholder = "Dano (ex.: 12d6 acid)";
+    const areaKind = el("select");
+    areaKind.append(new Option("Sem área", ""));
+    for (const [k, t] of [["cone", "Cone"], ["line", "Linha"], ["burst", "Explosão"], ["emanation", "Emanação"]]) areaKind.append(new Option(t, k));
+    const areaFeet = el("input");
+    areaFeet.type = "number";
+    areaFeet.placeholder = "pés";
+    areaFeet.style.width = "64px";
+    const cond = el("select");
+    cond.append(new Option("Sem condição", ""));
+    for (const d of CONDITIONS) cond.append(new Option(d.pt, d.key));
+    const cval = el("input");
+    cval.type = "number";
+    cval.min = "1";
+    cval.value = "1";
+    cval.style.width = "56px";
+    cval.title = "Valor da condição";
+    const crounds = el("input");
+    crounds.type = "number";
+    crounds.min = "1";
+    crounds.placeholder = "rodadas";
+    crounds.style.width = "76px";
+
+    const form = el("div", "visibility");
+    form.append(
+      field("Nome", name),
+      field("Salvaguarda", save),
+      field("CD", dc),
+      basicLab,
+      field("Dano", dmg),
+      field("Área", areaKind),
+      field("Alcance da área (pés)", areaFeet),
+      field("Condição na falha", cond),
+      field("Valor", cval),
+      field("Duração (rodadas)", crounds),
+      button("Salvar habilidade", () => {
+        const n = name.value.trim();
+        const cd = parseInt(dc.value, 10);
+        if (!n || !Number.isFinite(cd)) return say("Dê um nome e a CD da habilidade.");
+        const d = dmg.value.trim();
+        const parsed = d ? parseDamage(d) : null;
+        if (d && !parsed) return say("Dano não entendido. Use algo como 12d6 acid.");
+        const ab: CreatureAbility = {
+          name: n,
+          save: save.value as CreatureAbility["save"],
+          dc: cd,
+          basic: basic.checked,
+          ...(parsed
+            ? { damage: `${parsed.dice}d${parsed.die}${parsed.bonus ? (parsed.bonus > 0 ? `+${parsed.bonus}` : String(parsed.bonus)) : ""}`, damageType: parsed.type }
+            : {}),
+          ...(areaKind.value && parseInt(areaFeet.value, 10) > 0
+            ? { area: { kind: areaKind.value as "cone" | "line" | "burst" | "emanation", feet: parseInt(areaFeet.value, 10) } }
+            : {}),
+          ...(cond.value
+            ? { conditions: [{ key: cond.value, value: Math.max(1, parseInt(cval.value, 10) || 1), ...(parseInt(crounds.value, 10) > 0 ? { rounds: parseInt(crounds.value, 10) } : {}) }] }
+            : {}),
+        };
+        upsertCreature({ ...c, abilities: [...(c.abilities ?? []), ab] });
+        abilityFormOpen.delete(c.id);
+        render();
+      }),
+    );
+    box.append(form);
+    return box;
+  }
+
   /* ---------- condição à mão ---------- */
   /** O mestre aplica uma condição (e o valor) quando precisa; o valor pode cair 1 por rodada. */
   function conditionAdder(c: Creature): HTMLElement {
@@ -808,7 +935,7 @@ export function initCreatures(root: HTMLElement, onRender?: () => void, part: Cr
       else openSheets.delete(c.id);
     });
     sheet.append(el("summary", "sub", "Ficha completa"), statBlock(c));
-    li.append(hpRow, attackBlock(c), actions, sheet);
+    li.append(hpRow, attackBlock(c), abilityBlock(c), actions, sheet);
     return li;
   }
 

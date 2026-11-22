@@ -20,7 +20,6 @@ import { loadState, onStateChange, saveState, type CharState } from "./state";
 import { CAST_REQ, type CastAction } from "./cardData";
 import { showCard } from "./cardView";
 import { tokenDistanceFeet } from "./grid";
-import { loadSettings, onSettingsChange, saveSettings } from "./settings";
 import { initCombat } from "./combatUi";
 import { fetchBuild, toCharacter } from "./pathbuilder";
 import { DEGREE_TEXT, publishEvent, publishRoll, signed, formulaText } from "./roll";
@@ -106,20 +105,10 @@ app.innerHTML = `
         <input id="pbid" inputmode="numeric" placeholder="ID do Pathbuilder (6 dígitos)" />
         <button type="submit">Importar</button>
       </form>
-      <label class="manual-toggle" id="auto-player" hidden>
-        <input type="checkbox" id="auto-roll" />
-        Rolar automaticamente, sem perguntar antes (liberado pelo mestre)
-      </label>
       <div id="sheet-ficha"></div>
     </section>
     <section id="tab-combate" hidden></section>
     <section id="tab-criaturas" hidden>
-      <div id="gm-settings">
-        <label class="manual-toggle" id="auto-gm" hidden>
-          <input type="checkbox" id="allow-auto" />
-          Permitir que os jogadores rolem automaticamente (padrão: sempre perguntar)
-        </label>
-      </div>
       <div id="gm-creatures"></div>
     </section>
   </div>
@@ -166,12 +155,12 @@ function switchTab(name: TabName) {
   if (name !== "criaturas") focusedCreatureId = null;
   if (current) renderHud(current);
   else renderMasterHud();
-  app.querySelectorAll<HTMLButtonElement>(".tabs button").forEach((x) => {
+  app.querySelectorAll<HTMLButtonElement>(".tabs button[data-tab]").forEach((x) => {
     x.classList.toggle("active", x.dataset.tab === name);
   });
   for (const t of TABS) $(`#tab-${t}`).hidden = t !== name;
 }
-app.querySelectorAll<HTMLButtonElement>(".tabs button").forEach((b) =>
+app.querySelectorAll<HTMLButtonElement>(".tabs button[data-tab]").forEach((b) =>
   b.addEventListener("click", () => switchTab(b.dataset.tab as TabName)),
 );
 
@@ -340,51 +329,10 @@ const areaBtn = $<HTMLButtonElement>("#rearm-area");
 const noteEl = $<HTMLDivElement>("#target-note");
 
 /* ---------- perguntar antes de rolar + cartão de resultados ---------- */
-const AUTO_KEY = "pf2e.autoRoll";
 const confirmEl = $<HTMLDivElement>("#manual");
-const autoPlayerLabel = $<HTMLLabelElement>("#auto-player");
-const autoToggle = $<HTMLInputElement>("#auto-roll");
-const gmLabel = $<HTMLLabelElement>("#auto-gm");
-const allowToggle = $<HTMLInputElement>("#allow-auto");
-
-/** Liberado pelo mestre na sala (padrão: não). */
-let autoAllowed = false;
-/** Escolha deste jogador, valendo só se o mestre liberou. */
-let playerAuto = false;
-try {
-  playerAuto = localStorage.getItem(AUTO_KEY) === "1";
-} catch {
-  /* sem armazenamento: começa perguntando */
-}
-
-/** Padrão: sempre pergunta antes de rolar. Só rola direto se o mestre liberou E o jogador escolheu. */
-const mustAsk = () => !(autoAllowed && playerAuto);
-
-function applySettings() {
-  autoPlayerLabel.hidden = !autoAllowed;
-  autoToggle.checked = autoAllowed && playerAuto;
-  allowToggle.checked = autoAllowed;
-}
-autoToggle.addEventListener("change", () => {
-  playerAuto = autoToggle.checked;
-  if (current) renderSheet(current); // mostra ou esconde a caixa de flanqueio
-  try {
-    localStorage.setItem(AUTO_KEY, playerAuto ? "1" : "0");
-  } catch {
-    /* ignora */
-  }
-});
-allowToggle.addEventListener("change", () => {
-  autoAllowed = allowToggle.checked;
-  applySettings();
-  void saveSettings({ autoRollAllowed: autoAllowed }).catch(() => {
-    say("Não foi possível salvar o ajuste na sala.", true);
-  });
-});
-
-/** Por padrão o jogador confirma antes de os dados rolarem. `ok: false` = cancelou. */
-/** Rolagem automática: marca que o alvo do próximo ataque está flanqueado. */
-let autoFlank = false;
+/** O jogador sempre confirma antes de os dados rolarem. `ok: false` = cancelou. */
+/** Como este ataque conta para a penalidade de ataques múltiplos (MAP). */
+type MapMode = "normal" | "none" | "double";
 
 /** Alvos já marcados como flanqueados neste turno (volta a vazio quando o turno muda). */
 const flankMemory = new Map<string, boolean>();
@@ -394,14 +342,7 @@ function confirmRoll(
   lines: string[],
   /** Em ataques: nome do alvo, para oferecer a opção "alvo flanqueado". */
   flankTarget?: string,
-): Promise<{ ok: boolean; flanked: boolean; bonus: number }> {
-  if (!mustAsk()) {
-    // Rolagem automática: não há cartão de pergunta, então o flanqueio vem da caixa marcada em Agir.
-    const flanked = flankTarget !== undefined && autoFlank;
-    autoFlank = false;
-    if (current) renderSheet(current);
-    return Promise.resolve({ ok: true, flanked, bonus: 0 });
-  }
+): Promise<{ ok: boolean; flanked: boolean; bonus: number; map: MapMode }> {
   return new Promise((resolve) => {
     targetingEl.hidden = true; // uma coisa de cada vez na barra de ação
     confirmEl.replaceChildren();
@@ -434,12 +375,34 @@ function confirmRoll(
       text.append(label);
     }
 
+    // MAP: habilidades que ignoram a penalidade (e não contam como ataque) ou contam como dois ataques.
+    let mapMode: MapMode = "normal";
+    if (flankTarget !== undefined) {
+      const group = el("div", "map-options");
+      const opt = (mode: MapMode, label: string) => {
+        const lab = el("label", "flank-option");
+        const r = el("input");
+        r.type = "radio";
+        r.name = "map-mode";
+        r.checked = mode === "normal";
+        r.addEventListener("change", () => {
+          if (r.checked) mapMode = mode;
+        });
+        lab.append(r, " " + label);
+        group.append(lab);
+      };
+      opt("normal", "MAP normal");
+      opt("none", "Sem MAP (não leva a penalidade nem conta como ataque)");
+      opt("double", "Conta como 2 ataques (o MAP do próximo avança em dobro)");
+      text.append(group);
+    }
+
     const done = (v: boolean) => {
       if (v && box && flankTarget !== undefined) flankMemory.set(flankTarget, box.checked);
       confirmEl.hidden = true;
       confirmEl.replaceChildren();
       updateBanner(); // volta a faixa de alvo, se ainda houver
-      resolve({ ok: v, flanked: v && !!box?.checked, bonus: v ? parseInt(stepInput.value, 10) || 0 : 0 });
+      resolve({ ok: v, flanked: v && !!box?.checked, bonus: v ? parseInt(stepInput.value, 10) || 0 : 0, map: mapMode });
     };
     const roll = el("button", undefined, "Rolar dados");
     roll.type = "button";
@@ -761,11 +724,12 @@ async function onTargetPicked(tokenId: string) {
     attackerColor: await OBR.player.getColor(),
     title: p.title,
     bonus: p.bonus + answer.bonus,
-    mapPenalty: penalty,
+    mapPenalty: answer.map === "none" ? 0 : penalty,
     damage: p.damage,
     flanking: answer.flanked,
   };
-  attackNumber += 1;
+  // Sem MAP: não conta como ataque. Conta como 2: o contador avança em dobro.
+  attackNumber += answer.map === "none" ? 0 : answer.map === "double" ? 2 : 1;
 
   try {
     let result: AttackResult | null;
@@ -794,9 +758,11 @@ async function onTargetPicked(tokenId: string) {
 }
 
 function attackConfirmLines(p: AttackPending, targetName: string, penalty: number): string[] {
+  const next = mapFor(attackNumber + 1);
   const lines = [
     `Alvo: ${targetName}`,
     `Ataque: d20 ${signed(p.bonus)}${penalty ? ` −${penalty} (ataques múltiplos)` : ""}`,
+    `Ataque nº ${attackNumber}: MAP ${penalty ? `−${penalty}` : "0"} · o próximo terá ${next ? `−${next}` : "0"}`,
   ];
   if (p.damage) {
     const d = p.damage;
@@ -1397,17 +1363,6 @@ function renderSheet(c: Character) {
 
   fichaEl.append(head, hpBlock(c), conditionsBlock(c), adjustBlock(c), tokenBlock(c));
   agirEl.append(extraField());
-  if (!mustAsk()) {
-    const lab = el("label", "flank-option");
-    const cb = el("input");
-    cb.type = "checkbox";
-    cb.checked = autoFlank;
-    cb.addEventListener("change", () => {
-      autoFlank = cb.checked;
-    });
-    lab.append(cb, " Alvo flanqueado no próximo ataque (Desprevenido: −2 na CA)");
-    agirEl.append(lab);
-  }
   const shield = shieldRow(c);
   if (shield) agirEl.append(shield);
   testesEl.append(targetField(), extraField());
@@ -1780,14 +1735,6 @@ OBR.onReady(async () => {
   });
 
   // A ferramenta de área (página de fundo) devolve os tokens que ficaram dentro dela.
-  // Ajuste do mestre: rolagem automática liberada ou não (padrão: todos veem a pergunta).
-  if ((await OBR.player.getRole()) === "GM") gmLabel.hidden = false;
-  autoAllowed = (await loadSettings()).autoRollAllowed;
-  applySettings();
-  onSettingsChange((cfg) => {
-    autoAllowed = cfg.autoRollAllowed;
-    applySettings();
-  });
   OBR.broadcast.onMessage(AREA_RESULT, async (event) => {
     const r = event.data as AreaResultMsg;
     if (pending?.kind !== "spell") return;

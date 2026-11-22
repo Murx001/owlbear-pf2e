@@ -74,6 +74,27 @@ export interface Creature {
   tokenId?: string;
   /** Visibilidade para os jogadores. */
   show?: CreatureShow;
+  /** Habilidades com salvaguarda, dano e condições. */
+  abilities?: CreatureAbility[];
+}
+
+/**
+ * Habilidade da criatura que o mestre usa contra tokens (Sopro, Presença Aterradora…): salvaguarda do
+ * alvo contra a CD, dano e condições na falha. Vem do Foundry ou é cadastrada à mão.
+ */
+export interface CreatureAbility {
+  name: string;
+  /** Salvaguarda do alvo e a CD. */
+  save?: "fortitude" | "reflex" | "will";
+  dc?: number;
+  /** Salvaguarda básica (×0, ×½, ×1, ×2 no dano). */
+  basic?: boolean;
+  /** "12d6", "2d8+4" (o tipo vai em damageType). */
+  damage?: string;
+  damageType?: string;
+  area?: { kind: "burst" | "emanation" | "cone" | "line"; feet: number };
+  /** Condições aplicadas na falha (e falha crítica). */
+  conditions?: { key: string; value: number; rounds?: number }[];
 }
 
 export interface CreatureAttack {
