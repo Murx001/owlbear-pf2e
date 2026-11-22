@@ -33,8 +33,8 @@ async function openPanel() {
   await OBR.popover.open({
     id: LOG_PANEL,
     url: asset("log.html"),
-    width: Math.min(340, Math.max(220, w - RIGHT_GAP - 12)),
-    height: Math.max(260, Math.min(h - 200, 620)),
+    width: Math.min(420, Math.max(220, w - RIGHT_GAP - 12)),
+    height: Math.max(260, Math.min(h - 190, 740)),
     anchorReference: "POSITION",
     anchorPosition: { left: w - RIGHT_GAP, top: 172 },
     anchorOrigin: { horizontal: "RIGHT", vertical: "TOP" },
