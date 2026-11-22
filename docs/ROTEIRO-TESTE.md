@@ -312,3 +312,9 @@ No cartão "o que esta magia faz", o botão **Traduzir para PT-BR** traduz a des
 
 ### 44. Talentos e características na ficha
 Na aba **Ficha**, a seção **Habilidades** lista os talentos importados do Pathbuilder (classe, ancestralidade, perícia, geral, herança, concedidos) e as **características de classe e ancestralidade**. Tocar num item abre o cartão com a descrição do Foundry (ações, traços, pré-requisitos), o botão **Traduzir para PT-BR** e **Mostrar a todos** (que envia traduzido se estiver traduzido). O que o Foundry não tem (ex.: Thralls, Nephilim) mostra um link para o Archives of Nethys. Fichas importadas antes desta versão precisam ser **reimportadas** para ganhar as características de classe.
+
+### 45. Criar criaturas com o mesmo esquema da importação
+No bestiário, **+ Nova criatura** (e **Editar**) agora tem os mesmos campos de uma criatura importada do Foundry: além dos números, **Imunidades, Resistências e Fraquezas** (textos separados por vírgula, ex.: `fire 5`), a lista de **Ataques** (nome, bônus, dano, traços) e as **Habilidades** automáticas (CD, salvaguarda, dano, área, condição). Ataques e habilidades ficam num rascunho e só valem ao **Cadastrar**/**Salvar alterações**. Editar uma criatura importada também permite mudar essas listas.
+
+### 46. Painel do mestre mais limpo
+Em **Mestre**, cada criatura em jogo é uma **linha só** (nome, CA, PV, estado, ⚙ e lixeira); toque para abrir. Aberta, mostra salvaguardas, condições ativas e a linha **Dano/Cura/Temp./Iniciativa/Ver no mapa**; **Ataques**, **Habilidades**, **Aplicar condição** e **Ficha completa** são grupos que abrem só quando você precisa. Tocar no token de uma criatura abre o cartão dela. O **Backup** ficou recolhido e os textos de ajuda foram removidos.

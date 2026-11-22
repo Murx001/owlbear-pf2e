@@ -960,3 +960,31 @@ details.inst-sheet > summary {
   gap: 4px;
   padding: 4px 0;
 }
+
+/* ---------- painel do mestre mais limpo ---------- */
+details.cr-card > .cr-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 0 2px;
+}
+details.cr-card > summary {
+  list-style: none;
+  cursor: pointer;
+}
+details.cr-card > summary::-webkit-details-marker {
+  display: none;
+}
+details.fold {
+  border-top: 1px solid #2c3046;
+  padding-top: 2px;
+}
+details.fold > summary {
+  cursor: pointer;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+}
+.creature {
+  gap: 0;
+}

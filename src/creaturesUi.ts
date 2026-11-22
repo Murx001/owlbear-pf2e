@@ -19,6 +19,7 @@ import {
   upsertCreature,
   type Creature,
   type CreatureAbility,
+  type CreatureAttack,
 } from "./creatures";
 import OBR from "@owlbear-rodeo/sdk";
 import {
@@ -200,6 +201,96 @@ export function initCreatures(
     notes.placeholder = "Notas (opcional)";
     notes.value = editing?.notes ?? "";
 
+    // Defesas: textos separados por vírgula (mesmo formato do Foundry: "fire 5", "physical 10 (except silver)").
+    const listInput = (placeholder: string, value: string[] | undefined) => {
+      const i = el("input");
+      i.placeholder = placeholder;
+      i.value = (value ?? []).join(", ");
+      return i;
+    };
+    const splitList = (v: string) => v.split(",").map((t) => t.trim()).filter(Boolean);
+    const imm = listInput("Imunidades (ex.: poison, paralyzed)", editing?.immunities);
+    const res = listInput("Resistências (ex.: fire 5, physical 10)", editing?.resistances);
+    const weak = listInput("Fraquezas (ex.: cold 5, cold iron 3)", editing?.weaknesses);
+
+    // Ataques e habilidades em edição (rascunho): só vão para a criatura ao salvar.
+    const draftAttacks: CreatureAttack[] = [...(editing?.attacks ?? [])];
+    const draftAbilities: CreatureAbility[] = [...(editing?.abilities ?? [])];
+    const attackBox = el("div", "visibility");
+    const abilityBox = el("div", "visibility");
+    const attackMsg = el("p", "sub");
+
+    const renderAttacks = () => {
+      attackBox.replaceChildren(el("strong", undefined, "Ataques"));
+      if (draftAttacks.length === 0) attackBox.append(el("p", "sub", "Nenhum ainda. Adicione abaixo (nome, bônus, dano e traços)."));
+      draftAttacks.forEach((a, i) => {
+        const r = el("div", "import");
+        const info = el("span", "sub", `${a.name} ${signed(a.bonus)}${a.damage ? ` (${a.damage})` : ""}${a.traits.length ? ` [${a.traits.join(", ")}]` : ""}`);
+        info.style.flex = "1";
+        r.append(info, button("×", () => {
+          draftAttacks.splice(i, 1);
+          renderAttacks();
+        }, "mini"));
+        attackBox.append(r);
+      });
+      const n = el("input");
+      n.placeholder = "Nome (ex.: Mandíbula)";
+      const b = el("input");
+      b.type = "number";
+      b.placeholder = "Bônus";
+      b.style.width = "70px";
+      const d = el("input");
+      d.placeholder = "Dano (ex.: 2d8+6 piercing)";
+      const t = el("input");
+      t.placeholder = "Traços (ex.: reach 10 feet)";
+      attackBox.append(
+        n,
+        b,
+        d,
+        t,
+        button("+ Adicionar ataque", () => {
+          const name = n.value.trim();
+          const bonus = parseInt(b.value, 10);
+          const dmg = d.value.trim();
+          if (!name || !Number.isFinite(bonus)) {
+            attackMsg.textContent = "Dê um nome e o bônus de ataque.";
+            return;
+          }
+          if (dmg && !parseDamage(dmg)) {
+            attackMsg.textContent = "Dano não entendido. Use algo como 2d8+6 piercing.";
+            return;
+          }
+          attackMsg.textContent = "";
+          draftAttacks.push({ name, bonus, damage: dmg, traits: splitList(t.value.toLowerCase()) });
+          renderAttacks();
+        }),
+        attackMsg,
+      );
+    };
+
+    const renderAbilities = () => {
+      abilityBox.replaceChildren(el("strong", undefined, "Habilidades (automáticas)"));
+      if (draftAbilities.length === 0) abilityBox.append(el("p", "sub", "Nenhuma ainda. Cadastre abaixo (CD, salvaguarda, dano, área e condição)."));
+      draftAbilities.forEach((a, i) => {
+        const r = el("div", "import");
+        const info = el("span", "sub", `${a.name}: ${abilityLabel(a)}`);
+        info.style.flex = "1";
+        r.append(info, button("×", () => {
+          draftAbilities.splice(i, 1);
+          renderAbilities();
+        }, "mini"));
+        abilityBox.append(r);
+      });
+      abilityBox.append(
+        abilityForm((ab) => {
+          draftAbilities.push(ab);
+          renderAbilities();
+        }),
+      );
+    };
+    renderAttacks();
+    renderAbilities();
+
     const save = button(editing ? "Salvar alterações" : "Cadastrar", () => {
       const num = (k: keyof Creature) => parseInt(inputs.get(k)!.value, 10);
       const name = inputs.get("name")!.value.trim();
@@ -231,7 +322,15 @@ export function initCreatures(
           .split(",")
           .map((t) => t.trim().toLowerCase())
           .filter(Boolean),
+        immunities: splitList(imm.value),
+        resistances: splitList(res.value),
+        weaknesses: splitList(weak.value),
+        attacks: draftAttacks,
+        abilities: draftAbilities,
       };
+      for (const k of ["immunities", "resistances", "weaknesses", "attacks", "abilities"] as const) {
+        if (c[k]?.length === 0) delete c[k];
+      }
       upsertCreature(c);
       openCards.add(c.id);
       editing = null;
@@ -247,7 +346,7 @@ export function initCreatures(
         render();
       }),
     );
-    box.append(grid, group, list, traits, notes, row);
+    box.append(grid, group, list, traits, imm, res, weak, attackBox, abilityBox, notes, row);
     return box;
   }
 
@@ -587,7 +686,7 @@ export function initCreatures(
         render();
       }),
     );
-    box.append(el("strong", undefined, "Atacar (automático)"), head);
+    box.append(head);
 
     const opts = el("div", "import");
     const extra = el("input");
@@ -654,11 +753,8 @@ export function initCreatures(
    */
   function abilityBlock(c: Creature): HTMLElement {
     const box = el("div", "visibility");
-    box.append(el("strong", undefined, "Habilidades (automáticas)"));
     const list = c.abilities ?? [];
-    if (list.length === 0) {
-      box.append(el("p", "sub", "Nenhuma ainda. Cadastre uma abaixo (CD, salvaguarda, dano, área e condição)."));
-    }
+    if (list.length === 0) box.append(el("p", "sub", "Nenhuma ainda."));
     list.forEach((a, i) => {
       const row = el("div", "import");
       const use = el("button", undefined, `Usar: ${a.name}`);
@@ -674,13 +770,6 @@ export function initCreatures(
       }, "mini"));
       box.append(row);
     });
-    box.append(
-      el(
-        "p",
-        "sub",
-        "Toque em Usar: a faixa de alvos aparece embaixo (como nas magias dos jogadores). Com área, posicione no mapa; use Vários alvos e Resolver para ajustar.",
-      ),
-    );
     const open = abilityFormOpen.has(c.id);
     box.append(
       button(open ? "Fechar cadastro" : "+ Nova habilidade", () => {
@@ -690,6 +779,21 @@ export function initCreatures(
     );
     if (!open) return box;
 
+    box.append(
+      abilityForm((ab) => {
+        upsertCreature({ ...c, abilities: [...(c.abilities ?? []), ab] });
+        abilityFormOpen.delete(c.id);
+        render();
+      }),
+    );
+    return box;
+  }
+
+  /**
+   * Formulário de uma habilidade (CD, salvaguarda, dano, área, condição). Usado na ficha em jogo e no
+   * cadastro/edição do modelo; devolve a habilidade pronta por `onSave`. Erros aparecem no próprio formulário.
+   */
+  function abilityForm(onSave: (a: CreatureAbility) => void): HTMLElement {
     const field = (label: string, input: HTMLElement) => {
       const lab = el("label", "target", `${label} `);
       lab.append(input);
@@ -732,6 +836,7 @@ export function initCreatures(
     crounds.placeholder = "rodadas";
     crounds.style.width = "76px";
 
+    const err = el("p", "sub");
     const form = el("div", "visibility");
     form.append(
       field("Nome", name),
@@ -747,10 +852,10 @@ export function initCreatures(
       button("Salvar habilidade", () => {
         const n = name.value.trim();
         const cd = parseInt(dc.value, 10);
-        if (!n || !Number.isFinite(cd)) return say("Dê um nome e a CD da habilidade.");
+        if (!n || !Number.isFinite(cd)) { err.textContent = "Dê um nome e a CD da habilidade."; return; }
         const d = dmg.value.trim();
         const parsed = d ? parseDamage(d) : null;
-        if (d && !parsed) return say("Dano não entendido. Use algo como 12d6 acid.");
+        if (d && !parsed) { err.textContent = "Dano não entendido. Use algo como 12d6 acid."; return; }
         const ab: CreatureAbility = {
           name: n,
           save: save.value as CreatureAbility["save"],
@@ -766,13 +871,11 @@ export function initCreatures(
             ? { conditions: [{ key: cond.value, value: Math.max(1, parseInt(cval.value, 10) || 1), ...(parseInt(crounds.value, 10) > 0 ? { rounds: parseInt(crounds.value, 10) } : {}) }] }
             : {}),
         };
-        upsertCreature({ ...c, abilities: [...(c.abilities ?? []), ab] });
-        abilityFormOpen.delete(c.id);
-        render();
+        onSave(ab);
       }),
+      err,
     );
-    box.append(form);
-    return box;
+    return form;
   }
 
   /* ---------- condição à mão ---------- */
@@ -868,13 +971,38 @@ export function initCreatures(
     return box;
   }
 
+  const openCreatures = new Set<string>(); // cartões abertos (os outros ficam numa linha só)
+  const foldsOpen = new Set<string>(); // grupos abertos dentro do cartão
+
+  /** Grupo recolhível dentro do cartão: o mestre abre só o que precisa. */
+  function fold(c: Creature, key: string, title: string, body: HTMLElement, count?: number): HTMLElement {
+    const d = el("details", "fold");
+    const id = `${c.id}:${key}`;
+    d.open = foldsOpen.has(id);
+    d.addEventListener("toggle", () => {
+      if (d.open) foldsOpen.add(id);
+      else foldsOpen.delete(id);
+    });
+    d.append(el("summary", "sub", count === undefined ? title : `${title} (${count})`), body);
+    return d;
+  }
+
   function instanceCard(c: Creature): HTMLElement {
     const s = statusOf(c);
     const li = el("li", "creature");
     li.dataset.cid = c.id; // para achar o cartão ao tocar no token
     const ac = creatureAc(c);
-    const head = el("div", "chead");
-    head.append(
+    const card = el("details", "cr-card");
+    card.open = openCreatures.has(c.id);
+    card.addEventListener("toggle", () => {
+      if (card.open) openCreatures.add(c.id);
+      else openCreatures.delete(c.id);
+    });
+
+    // Uma linha só: nome, CA, PV e estado. O resto aparece ao abrir.
+    const sum = el("summary", "tpl-sum");
+    const names = el("span", "tpl-name");
+    names.append(
       el("strong", undefined, c.name),
       el(
         "span",
@@ -882,18 +1010,25 @@ export function initCreatures(
         `CA ${ac.value}${ac.penalty > 0 ? ` (base ${c.ac})` : ""} · PV ${c.hp}/${c.hpMax}${c.temp ? ` +${c.temp}` : ""} · ${s.label}`,
       ),
     );
-    head.append(summaryButton("⚙", () => { gearOpen.has(c.id) ? gearOpen.delete(c.id) : gearOpen.add(c.id); render(); }, "gear"));
-    head.append(
-      trashButton("Desvincular do token e remover", async () => {
-        if (confirm(`Remover ${c.name}? O vínculo com o token também será desfeito.`)) {
-          removeCreature(c.id);
-          await unlinkCreatureEverywhere(c.id).catch(() => undefined);
-          render();
-        }
-      }),
+    sum.append(
+      names,
+      summaryButton("⚙", () => { gearOpen.has(c.id) ? gearOpen.delete(c.id) : gearOpen.add(c.id); openCreatures.add(c.id); render(); }, "gear"),
+      trashButton(
+        "Desvincular do token e remover",
+        async () => {
+          if (confirm(`Remover ${c.name}? O vínculo com o token também será desfeito.`)) {
+            removeCreature(c.id);
+            await unlinkCreatureEverywhere(c.id).catch(() => undefined);
+            render();
+          }
+        },
+        true,
+      ),
     );
-    li.append(head);
-    if (gearOpen.has(c.id)) li.append(visibilityPanel(c));
+    card.append(sum);
+
+    const body = el("div", "cr-body");
+    if (gearOpen.has(c.id)) body.append(visibilityPanel(c));
 
     // Salvaguardas e Percepção já com as condições; o que mudou fica destacado.
     const eff = el("div", "sub");
@@ -906,7 +1041,7 @@ export function initCreatures(
     part("Vont", creatureSave(c, "will"));
     part("Percep.", creaturePerception(c));
     eff.lastChild?.remove(); // tira o último " · "
-    li.append(eff);
+    body.append(eff);
 
     const conds = Object.entries(c.conditions ?? {});
     if (conds.length > 0) {
@@ -932,10 +1067,8 @@ export function initCreatures(
         );
         chips.append(chip);
       }
-      li.append(chips);
+      body.append(chips);
     }
-
-    li.append(conditionAdder(c));
 
     const amount = el("input");
     amount.type = "number";
@@ -963,10 +1096,6 @@ export function initCreatures(
         upsertCreature({ ...c, temp: Math.max(c.temp, n) });
         render();
       }),
-    );
-
-    const actions = el("div", "import wrap");
-    actions.append(
       button("Iniciativa", async () => {
         const msg = await publishRoll({
           title: `Iniciativa (${c.name})`,
@@ -982,14 +1111,14 @@ export function initCreatures(
       button("Ver no mapa", async () => {
         if (c.tokenId) await OBR.player.select([c.tokenId]);
       }),
-      button("Remover", async () => {
-        if (confirm(`Remover ${c.name}? O vínculo com o token também será desfeito.`)) {
-          removeCreature(c.id);
-          await unlinkCreatureEverywhere(c.id).catch(() => undefined);
-          render();
-        }
-      }),
     );
+    body.append(hpRow);
+
+    // Grupos recolhidos: só abrem quando o mestre precisa.
+    if ((c.attacks ?? []).length > 0) body.append(fold(c, "atk", "Ataques", attackBlock(c), c.attacks!.length));
+    body.append(fold(c, "abil", "Habilidades", abilityBlock(c), (c.abilities ?? []).length));
+    body.append(fold(c, "cond", "Aplicar condição", conditionAdder(c)));
+
     // Ficha completa (traços, defesas, ataques, notas), como a do bestiário.
     const sheet = el("details", "inst-sheet");
     sheet.open = openSheets.has(c.id);
@@ -998,7 +1127,9 @@ export function initCreatures(
       else openSheets.delete(c.id);
     });
     sheet.append(el("summary", "sub", "Ficha completa"), statBlock(c));
-    li.append(hpRow, attackBlock(c), abilityBlock(c), actions, sheet);
+    body.append(sheet);
+    card.append(body);
+    li.append(card);
     return li;
   }
 
@@ -1046,7 +1177,6 @@ export function initCreatures(
 
   function backupSection(): HTMLElement {
     const box = el("section", "block");
-    box.append(el("h4", undefined, "Backup das criaturas"));
     const count = loadCreatures().length;
     const last = lastBackupAt();
     const days = last ? (Date.now() - last.getTime()) / 86_400_000 : Infinity;
@@ -1181,14 +1311,7 @@ export function initCreatures(
   function render() {
     root.replaceChildren();
     if (showPlay) {
-      root.append(
-        el(
-          "p",
-          "sub",
-          "Ligue um modelo a vários tokens: cada token vira uma criatura própria, com PV e condições separados. Os jogadores só veem o estado (Ileso, Ferido…).",
-        ),
-      );
-      root.append(button("Abrir bestiário (tela grande)", () => void openBestiary()));
+      // Sem texto de ajuda: a linha de ações vem primeiro (o resto está em grupos recolhidos).
     } else {
       root.append(
         el(
@@ -1214,9 +1337,12 @@ export function initCreatures(
     const instances = loadCreatures().filter(isInstance).sort(byName);
     const inst = el("section", "block");
     inst.append(el("h4", undefined, `Em jogo (${instances.length})`));
+    const bar = el("div", "import wrap");
+    bar.append(button("Abrir bestiário", () => void openBestiary()));
+    inst.append(bar);
     if (instances.length > 0) {
-      inst.append(
-        button("Rolar iniciativa de todas", async () => {
+      bar.append(
+        button("Iniciativa de todas", async () => {
           let combat = await loadCombat();
           for (const c of instances) {
             const total = rollDie(20) + creaturePerception(c).value;
@@ -1229,19 +1355,22 @@ export function initCreatures(
     }
     const iul = el("ul", "creatures");
     if (instances.length === 0) {
-      iul.append(el("li", "sub", "Selecione tokens no mapa e use “Vincular” numa criatura do bestiário."));
+      iul.append(el("li", "sub", "Nenhuma criatura em jogo. Abra o bestiário, selecione tokens no mapa e use Vincular."));
     }
     for (const c of instances) iul.append(instanceCard(c));
     inst.append(iul);
     inst.append(orphanNotice());
 
-    root.append(inst, backupSection());
+    const backup = el("details", "fold");
+    backup.append(el("summary", "sub", "Backup das criaturas"), backupSection());
+    root.append(inst, backup);
     onRender?.();
   }
 
   /** Tocou no token de uma criatura: abre a ficha dela e rola até o cartão, com destaque. */
   function focus(id: string) {
     openSheets.add(id);
+    openCreatures.add(id);
     render();
     const node = root.querySelector<HTMLElement>(`[data-cid="${id}"]`);
     if (!node) return;
