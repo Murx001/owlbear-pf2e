@@ -212,3 +212,9 @@ Limites: durações longas (1 hora, até o descanso) só aparecem como rótulo; 
 
 ### 23. Tema "grimório"
 Confira nos dois painéis e nos cartões: fundo escuro com detalhes dourados, títulos em Cinzel, CA em escudo, abas com ícones (barra de baixo no celular) e contornos legíveis. Reporte o que ficar apertado ou ilegível.
+
+### 24. Cada jogador só abre a própria ficha
+1. O jogador coloca o **próprio token** no mapa, importa a ficha dele (Ficha) e usa **Vincular ao token selecionado**. Num token que ele não colocou, aparece o aviso "só pode vincular a um token seu".
+2. Depois de vinculado, ao reabrir a extensão a ficha **já vem fixa** ("Ficha fixada ao seu token") e o campo de importar some.
+3. Tocar no token de **outro jogador** não abre a ficha dele. O **mestre** (dono da sala) abre qualquer ficha tocando no token.
+4. Tokens vinculados antes desta versão valem para quem os criou.

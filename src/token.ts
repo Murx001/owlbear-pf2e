@@ -8,6 +8,8 @@ const KEY = LINK_KEY;
 export interface TokenLink {
   pathbuilderId: string;
   name: string;
+  /** Jogador dono do token (quem vinculou). Só ele e o mestre abrem esta ficha. */
+  ownerId?: string;
 }
 
 export function isLink(v: unknown): v is TokenLink {
@@ -120,13 +122,48 @@ export async function linkOfToken(id: string): Promise<TokenLink | undefined> {
 
 export async function linkSelectedToken(link: TokenLink): Promise<void> {
   const id = await selectedId();
+  const me = OBR.player.id;
+  const isGm = (await OBR.player.getRole()) === "GM";
+  const [item] = await OBR.scene.items.getItems([id]);
+  // Jogador só prende a ficha a um token que ele mesmo colocou na mesa.
+  if (!isGm && item && item.createdUserId !== me) {
+    throw new Error("Você só pode vincular a sua ficha a um token seu (um que você mesmo colocou no mapa).");
+  }
+  const owner = isGm ? (item?.createdUserId ?? me) : me;
   try {
     await OBR.scene.items.updateItems([id], (items) => {
-      for (const item of items) item.metadata[KEY] = link;
+      for (const it of items) it.metadata[KEY] = { ...link, ownerId: owner };
     });
   } catch {
     throw new Error("Sem permissão para alterar esse token. Peça ao mestre ou use um token seu.");
   }
+}
+
+/** Dono efetivo da ficha ligada a um token: quem vinculou ou, em vínculos antigos, quem criou o token. */
+export function sheetOwner(link: TokenLink, createdUserId: string): string {
+  return link.ownerId ?? createdUserId;
+}
+
+/** Vínculo do token selecionado, só se este jogador puder abrir a ficha (dono ou mestre). */
+export async function openableLinkOfSelection(): Promise<TokenLink | undefined> {
+  const sel = (await OBR.player.getSelection()) ?? [];
+  if (sel.length !== 1) return undefined;
+  const [item] = await OBR.scene.items.getItems([sel[0]]);
+  const v = item?.metadata[KEY];
+  if (!item || !isLink(v)) return undefined;
+  if ((await OBR.player.getRole()) === "GM") return v;
+  return sheetOwner(v, item.createdUserId) === OBR.player.id ? v : undefined;
+}
+
+/** A ficha fixada ao token deste jogador (o primeiro token seu com ficha), se existir. */
+export async function myPinnedLink(): Promise<TokenLink | undefined> {
+  const me = OBR.player.id;
+  const items = await OBR.scene.items.getItems((i) => isLink(i.metadata[KEY]));
+  for (const it of items) {
+    const v = it.metadata[KEY] as TokenLink;
+    if (sheetOwner(v, it.createdUserId) === me) return v;
+  }
+  return undefined;
 }
 
 export async function unlinkSelectedToken(): Promise<void> {

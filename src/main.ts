@@ -25,6 +25,8 @@ import {
   LINK_KEY,
   creatureOfToken,
   linkOfSelection,
+  openableLinkOfSelection,
+  myPinnedLink,
   linkOfToken,
   linkSelectedToken,
   unlinkSelectedToken,
@@ -1451,6 +1453,8 @@ $("#import").addEventListener("submit", (ev) => {
 let combatUi: { render(): void } | undefined;
 let creaturesUi: { render(): void; focus(id: string): void } | undefined;
 let isGmRole = false;
+/** Ficha fixada ao token do jogador: é a única que ele abre. */
+let pinned = false;
 
 OBR.onReady(async () => {
   listenAttackAcks();
@@ -1507,8 +1511,23 @@ OBR.onReady(async () => {
     getCharacter: () => current,
     getState: () => state,
   });
+  // Jogador: a ficha presa ao token dele vira a única ficha disponível.
+  const mine = isGmRole ? undefined : await myPinnedLink().catch(() => undefined);
+  if (mine?.pathbuilderId) {
+    pinned = true;
+    store.set(mine.pathbuilderId);
+    pbidEl.value = mine.pathbuilderId;
+    $("#import").hidden = true;
+    const note = document.createElement("p");
+    note.className = "sub";
+    note.textContent = `Ficha fixada ao seu token: ${mine.name}.`;
+    $("#import").after(note);
+    void importById(mine.pathbuilderId);
+  }
   const saved = store.get();
-  if (saved) {
+  if (pinned) {
+    /* já carregada acima */
+  } else if (saved) {
     pbidEl.value = saved;
     void importById(saved);
   } else {
@@ -1557,7 +1576,9 @@ OBR.onReady(async () => {
       return;
     }
 
-    const link = await linkOfSelection();
+    // Jogador só abre a ficha do próprio token; a de outro jogador não abre. O mestre abre todas.
+    const link = await openableLinkOfSelection();
+    if (pinned) return;
     if (link && link.pathbuilderId && link.pathbuilderId !== current?.pathbuilderId) {
       pbidEl.value = link.pathbuilderId;
       switchTab("agir");
