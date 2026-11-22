@@ -725,11 +725,14 @@ async function resolveManeuverOn(p: AttackPending, targetName: string, creatureI
     `${m.skillName}: d20 ${signed(p.bonus)}${penalty ? ` −${penalty} (ataques múltiplos)` : ""}`,
     `Contra a CD de ${DC_PT[m.dc]} do alvo`,
   ];
-  if (m.attack) {
-    const next = mapFor(attackNumber + 1);
-    lines.push(`Ataque nº ${attackNumber}: MAP ${penalty ? `−${penalty}` : "0"} · o próximo terá ${next ? `−${next}` : "0"}`);
-  }
-  const answer = await confirmRoll(p.title, lines, m.attack ? targetName : undefined, { flank: false });
+  const next = mapFor(attackNumber + 1);
+  lines.push(
+    m.attack
+      ? `Ataque nº ${attackNumber}: MAP ${penalty ? `−${penalty}` : "0"} · o próximo terá ${next ? `−${next}` : "0"}`
+      : `${m.name} não tem o traço de ataque: sem MAP (a opção "Conta como 2 ataques" ainda avança o contador)`,
+  );
+  // A mesma caixa de todas as outras rolagens (bônus nesta rolagem, flanqueio e MAP).
+  const answer = await confirmRoll(p.title, lines, targetName);
   if (!answer.ok) return;
 
   setTargeting(null);
@@ -742,6 +745,7 @@ async function resolveManeuverOn(p: AttackPending, targetName: string, creatureI
     mapPenalty: m.attack && answer.map !== "none" ? penalty : 0,
   };
   if (m.attack) attackNumber += answer.map === "none" ? 0 : answer.map === "double" ? 2 : 1;
+  else if (answer.map === "double") attackNumber += 2;
 
   try {
     let result: ManeuverResult | null;
