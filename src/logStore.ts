@@ -1,6 +1,5 @@
 import OBR from "@owlbear-rodeo/sdk";
 import {
-  DEGREE_TEXT,
   EVENT_CHANNEL,
   ROLL_CHANNEL,
   type EventMessage,
@@ -62,7 +61,7 @@ export function setUnread(n: number) {
   }
 }
 
-/** Liga a escuta (página de fundo): guarda no histórico, conta não lidos e avisa na tela. */
+/** Liga a escuta (página de fundo): guarda no histórico e conta os não lidos. Sem balões: o histórico já mostra tudo. */
 export function listenRolls(isLogOpen: () => Promise<boolean>) {
   const note = async (e: LogEntry) => {
     pushLog(e);
@@ -71,16 +70,9 @@ export function listenRolls(isLogOpen: () => Promise<boolean>) {
   OBR.broadcast.onMessage(EVENT_CHANNEL, (event) => {
     const msg = event.data as EventMessage;
     void note({ t: "event", at: Date.now(), m: msg });
-    void OBR.notification.show(`${msg.name} ${msg.text}`);
   });
   OBR.broadcast.onMessage(ROLL_CHANNEL, (event) => {
     const msg = event.data as RollMessage;
     void note({ t: "roll", at: Date.now(), m: msg });
-    const title = msg.title ? ` (${msg.title})` : "";
-    const degree = msg.degree ? ` — ${DEGREE_TEXT[msg.degree]}` : "";
-    void OBR.notification.show(
-      `${msg.name} rolou ${msg.label}${title}: ${msg.total}${degree}`,
-      msg.degree === "crit-failure" || msg.degree === "failure" ? "WARNING" : "DEFAULT",
-    );
   });
 }

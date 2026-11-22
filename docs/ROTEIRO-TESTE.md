@@ -204,7 +204,7 @@ Limites: durações longas (1 hora, até o descanso) só aparecem como rótulo; 
 
 ### 22. Histórico na barra da direita (todos)
 1. À direita da tela há um botão redondo com um **pergaminho**. Toque nele: abre a barra **Histórico** com as rolagens e avisos da mesa (mais recentes no topo). Toque de novo (ou no **×**, ou Esc) para fechar. Vale para mestre e jogadores.
-2. O painel principal não tem mais a lista de rolagens; as notificações rápidas continuam aparecendo.
+2. O painel principal não tem mais a lista de rolagens, e os balões de rolagens e avisos foram removidos (só o histórico mostra). Erros ainda aparecem como aviso.
 3. Com a barra **fechada**, cada rolagem nova acende uma bolinha vermelha com a contagem no pergaminho; ao abrir, zera.
 4. Os **nomes** dos jogadores aparecem claros e legíveis, mesmo com cores escuras.
 5. **Limpar** apaga o histórico só no seu navegador. O histórico guarda as últimas 100 entradas.
