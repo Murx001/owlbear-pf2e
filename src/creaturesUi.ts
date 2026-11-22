@@ -666,15 +666,12 @@ export function initCreatures(
   }
 
   /* ---------- ataques automáticos da criatura ---------- */
-  const extraByCreature = new Map<string, { extra: string; flank: boolean }>();
 
   /** Botões de ataque: toca, escolhe o token do alvo no mapa e o sistema rola e aplica o dano. */
   function attackBlock(c: Creature): HTMLElement {
     const box = el("div", "visibility");
     const attacks = c.attacks ?? [];
     if (attacks.length === 0) return box;
-    const mem = extraByCreature.get(c.id) ?? { extra: "", flank: false };
-    extraByCreature.set(c.id, mem);
     const n = attacksMade(c.id);
     const head = el("div", "import");
     const info = el("span", "sub", `Ataque nº ${n + 1}`);
@@ -687,22 +684,6 @@ export function initCreatures(
       }),
     );
     box.append(head);
-
-    const opts = el("div", "import");
-    const extra = el("input");
-    extra.type = "number";
-    extra.placeholder = "Bônus";
-    extra.style.width = "70px";
-    extra.value = mem.extra;
-    extra.addEventListener("input", () => (mem.extra = extra.value));
-    const flankLabel = el("label", "flank-option");
-    const flank = el("input");
-    flank.type = "checkbox";
-    flank.checked = mem.flank;
-    flank.addEventListener("change", () => (mem.flank = flank.checked));
-    flankLabel.append(flank, " Alvo flanqueado");
-    opts.append(extra, flankLabel);
-    box.append(opts);
 
     for (const a of attacks) {
       const pen = creatureMapPenalty(n, a);
@@ -717,11 +698,9 @@ export function initCreatures(
         beginCreatureAttack(
           c,
           a,
-          { extra: parseInt(mem.extra, 10) || 0, flanked: mem.flank },
+          { extra: 0, flanked: false },
           (t) => say(t),
           () => {
-            mem.extra = "";
-            mem.flank = false;
             render();
           },
         );

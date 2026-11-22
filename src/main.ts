@@ -5,7 +5,7 @@ import "./theme.css";
 import type { Attack, Character, Stat } from "./character";
 import { parseDamage } from "./damage";
 import { creatureAc, getCreature, type Creature, type CreatureAbility } from "./creatures";
-import { creatureAttackSelection } from "./creatureAttack";
+import { creatureAttackSelection, setCreatureConfirm } from "./creatureAttack";
 import { abilityCast } from "./creatureAbility";
 import { CARD_SHARE, type CardData } from "./cardData";
 import { aonSearch, fetchFeat } from "./featData";
@@ -425,6 +425,9 @@ function confirmRoll(
     roll.focus();
   });
 }
+
+// Ataques das criaturas do mestre usam a mesma tela de confirmação dos jogadores.
+setCreatureConfirm((title, lines, targetName) => confirmRoll(title, lines, targetName));
 
 /* ---------- área no mapa ---------- */
 /** Token da conjuradora: o que está selecionado se for dela, senão o primeiro vinculado à ficha. */

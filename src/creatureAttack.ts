@@ -32,6 +32,18 @@ interface Job {
 }
 
 let job: Job | null = null;
+let confirming = false; // a tela "deseja rolar os dados?" está aberta
+
+/** Como este ataque conta para a penalidade de ataques múltiplos. */
+export type CreatureMapMode = "normal" | "none" | "double";
+/** A mesma tela de confirmação dos jogadores (bônus nesta rolagem, flanqueio, MAP). */
+export type ConfirmAttack = (
+  title: string,
+  lines: string[],
+  targetName: string,
+) => Promise<{ ok: boolean; flanked: boolean; bonus: number; map: CreatureMapMode }>;
+let confirmFn: ConfirmAttack | null = null;
+export const setCreatureConfirm = (fn: ConfirmAttack) => void (confirmFn = fn);
 
 /** Ataques que cada criatura já fez neste turno (para a penalidade de ataques múltiplos). */
 const counts = new Map<string, number>();
@@ -50,7 +62,7 @@ export const creatureAttackActive = (id?: string) => job !== null && (id === und
 export function beginCreatureAttack(
   c: Creature,
   attack: CreatureAttack,
-  opts: { extra: number; flanked: boolean },
+  opts: { extra: number; flanked: boolean } = { extra: 0, flanked: false },
   say: (text: string) => void,
   done: () => void,
 ) {
@@ -88,7 +100,7 @@ function creatureTarget(id: string): Target | null {
 export async function creatureAttackSelection(ids: string[]): Promise<boolean> {
   const j = job;
   if (!j) return false;
-  if (ids.length !== 1) return true;
+  if (confirming || ids.length !== 1) return true;
   const c = getCreature(j.creatureId);
   if (!c) {
     job = null;
@@ -109,26 +121,48 @@ export async function creatureAttackSelection(ids: string[]): Promise<boolean> {
     return true;
   }
 
-  job = null;
   const n = attacksMade(c.id);
   const penalty = creatureMapPenalty(n, j.attack);
   const parsed = parseDamage(j.attack.damage);
-  const bonus = withConditions(j.attack.bonus, c.conditions ?? {}, { isAttack: true }).value + j.extra;
+  const base = withConditions(j.attack.bonus, c.conditions ?? {}, { isAttack: true }).value + j.extra;
+
+  // Pergunta antes de rolar, como nos ataques dos jogadores; cancelar mantém o ataque para outro alvo.
+  let answer: { flanked: boolean; bonus: number; map: CreatureMapMode } = { flanked: j.flanked, bonus: 0, map: "normal" };
+  if (confirmFn) {
+    const next = creatureMapPenalty(n + 1, j.attack);
+    const lines = [
+      `Alvo: ${tc?.name ?? pc!.name}`,
+      `Ataque: d20 ${base >= 0 ? "+" : "−"}${Math.abs(base)}${penalty ? ` −${penalty} (ataques múltiplos)` : ""}`,
+      `Ataque nº ${n + 1}: MAP ${penalty ? `−${penalty}` : "0"} · o próximo terá ${next ? `−${next}` : "0"}`,
+    ];
+    if (parsed) lines.push(`Dano: ${parsed.dice}d${parsed.die}${parsed.bonus ? (parsed.bonus > 0 ? `+${parsed.bonus}` : String(parsed.bonus)) : ""}${parsed.type ? ` ${parsed.type}` : ""}`);
+    confirming = true;
+    const a = await confirmFn(j.attack.name, lines, tc?.name ?? pc!.name).finally(() => (confirming = false));
+    if (!a.ok) {
+      j.say(`${j.attack.name}: escolha outro alvo no mapa ou cancele.`);
+      return true;
+    }
+    answer = { flanked: a.flanked, bonus: a.bonus, map: a.map };
+  }
+  job = null;
+  const bonus = base + answer.bonus;
   const spec: AttackSpec = {
     attackerName: publicLink(c).name,
     attackerColor: await OBR.player.getColor(),
     title: j.attack.name,
     bonus,
-    mapPenalty: penalty,
+    mapPenalty: answer.map === "none" ? 0 : penalty,
     damage: parsed ? { dice: parsed.dice, die: parsed.die, bonus: parsed.bonus, type: parsed.type } : undefined,
-    flanking: j.flanked,
+    flanking: answer.flanked,
   };
   try {
     const result: AttackResult = tc
       ? await resolveAgainst(spec, target!)
       : await resolveAttack(spec, pc!.pathbuilderId, pc!.name);
-    counts.set(c.id, n + 1);
-    const card: CardData = { kind: "attack", result, nextPenalty: creatureMapPenalty(n + 1, j.attack) };
+    // Sem MAP: não conta como ataque. Conta como 2: o contador avança em dobro.
+    const made = n + (answer.map === "none" ? 0 : answer.map === "double" ? 2 : 1);
+    counts.set(c.id, made);
+    const card: CardData = { kind: "attack", result, nextPenalty: creatureMapPenalty(made, j.attack) };
     void showCard(card);
     // O ataque de uma criatura é público: o cartão aparece para todos (o alvo secreto não vaza a CA).
     void OBR.broadcast.sendMessage(CARD_SHARE, { ...card, sharedBy: "Mestre" }, { destination: "REMOTE" });

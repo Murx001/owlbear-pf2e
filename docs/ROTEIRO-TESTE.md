@@ -324,3 +324,6 @@ Em **Mestre > Em jogo**, cada criatura tem uma **caixinha** à esquerda. Marque 
 
 ### 48. Alvos à mão em magias e habilidades de área
 Na faixa de alvos de uma magia (ou habilidade de criatura) **com área**, o botão **Alvos à mão** descarta a área desenhada e começa uma lista vazia: clique nos tokens para marcar/desmarcar e use **Resolver**. **Posicionar área** volta a usar a área.
+
+### 49. Ataques das criaturas com a tela "deseja rolar os dados?"
+Ao escolher o alvo de um ataque de criatura (Mestre > Ataques), aparece a **mesma tela de confirmação** dos jogadores: alvo, bônus do ataque, **Ataque nº N: MAP … · o próximo terá …**, dano, o contador **Bônus nesta rolagem**, **Inimigo flanqueado** e **MAP normal / Sem MAP / Conta como 2 ataques**. **Cancelar** mantém o ataque esperando outro alvo. Os campos antigos "Bônus" e "Alvo flanqueado" do bloco de ataques foram removidos (agora ficam nessa tela).
