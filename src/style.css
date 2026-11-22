@@ -988,3 +988,13 @@ details.fold > summary {
 .creature {
   gap: 0;
 }
+
+details.cr-card > summary input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+input.init-val {
+  width: 64px;
+  flex: none;
+}

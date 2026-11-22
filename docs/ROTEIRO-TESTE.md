@@ -318,3 +318,6 @@ No bestiário, **+ Nova criatura** (e **Editar**) agora tem os mesmos campos de 
 
 ### 46. Painel do mestre mais limpo
 Em **Mestre**, cada criatura em jogo é uma **linha só** (nome, CA, PV, estado, ⚙ e lixeira); toque para abrir. Aberta, mostra salvaguardas, condições ativas e a linha **Dano/Cura/Temp./Iniciativa/Ver no mapa**; **Ataques**, **Habilidades**, **Aplicar condição** e **Ficha completa** são grupos que abrem só quando você precisa. Tocar no token de uma criatura abre o cartão dela. O **Backup** ficou recolhido e os textos de ajuda foram removidos.
+
+### 47. Iniciativa só das criaturas marcadas
+Em **Mestre > Em jogo**, cada criatura tem uma **caixinha** à esquerda. Marque as que entram na iniciativa: ao marcar, aparece um campo para **digitar a iniciativa** (vazio = rola d20 + Percepção, com as condições). **Iniciativa das marcadas (N)** coloca todas de uma vez; **Marcar todas/Desmarcar todas** ajuda. O botão **Iniciativa** de dentro do cartão também usa o valor digitado. Substitui o antigo "Rolar iniciativa de todas".

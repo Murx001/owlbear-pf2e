@@ -971,6 +971,13 @@ export function initCreatures(
     return box;
   }
 
+  const initSel = new Set<string>(); // criaturas marcadas para a iniciativa
+  const initVal = new Map<string, string>(); // iniciativa digitada (vazio = rolar)
+  /** Valor da iniciativa: o digitado, ou d20 + Percepção (com as condições). */
+  const initiativeOf = (c: Creature) => {
+    const typed = parseInt(initVal.get(c.id) ?? "", 10);
+    return Number.isFinite(typed) ? typed : rollDie(20) + creaturePerception(c).value;
+  };
   const openCreatures = new Set<string>(); // cartões abertos (os outros ficam numa linha só)
   const foldsOpen = new Set<string>(); // grupos abertos dentro do cartão
 
@@ -1001,6 +1008,17 @@ export function initCreatures(
 
     // Uma linha só: nome, CA, PV e estado. O resto aparece ao abrir.
     const sum = el("summary", "tpl-sum");
+    const mark = el("input");
+    mark.type = "checkbox";
+    mark.checked = initSel.has(c.id);
+    mark.title = "Marcar para a iniciativa";
+    mark.setAttribute("aria-label", `Marcar ${c.name} para a iniciativa`);
+    mark.addEventListener("click", (ev) => ev.stopPropagation());
+    mark.addEventListener("change", () => {
+      if (mark.checked) initSel.add(c.id);
+      else initSel.delete(c.id);
+      render();
+    });
     const names = el("span", "tpl-name");
     names.append(
       el("strong", undefined, c.name),
@@ -1010,8 +1028,19 @@ export function initCreatures(
         `CA ${ac.value}${ac.penalty > 0 ? ` (base ${c.ac})` : ""} · PV ${c.hp}/${c.hpMax}${c.temp ? ` +${c.temp}` : ""} · ${s.label}`,
       ),
     );
+    sum.append(mark, names);
+    if (initSel.has(c.id)) {
+      const iv = el("input", "init-val");
+      iv.type = "number";
+      iv.placeholder = "rolar";
+      iv.title = "Iniciativa: deixe vazio para rolar (d20 + Percepção)";
+      iv.value = initVal.get(c.id) ?? "";
+      iv.addEventListener("click", (ev) => ev.stopPropagation());
+      iv.addEventListener("keydown", (ev) => ev.stopPropagation());
+      iv.addEventListener("input", () => initVal.set(c.id, iv.value));
+      sum.append(iv);
+    }
     sum.append(
-      names,
       summaryButton("⚙", () => { gearOpen.has(c.id) ? gearOpen.delete(c.id) : gearOpen.add(c.id); openCreatures.add(c.id); render(); }, "gear"),
       trashButton(
         "Desvincular do token e remover",
@@ -1097,6 +1126,12 @@ export function initCreatures(
         render();
       }),
       button("Iniciativa", async () => {
+        const typed = parseInt(initVal.get(c.id) ?? "", 10);
+        if (Number.isFinite(typed)) {
+          await saveCombat(addCombatant(await loadCombat(), { id: c.id, name: publicLink(c).name, value: typed }));
+          say(`${c.name} entrou na iniciativa com ${typed}.`);
+          return;
+        }
         const msg = await publishRoll({
           title: `Iniciativa (${c.name})`,
           count: 1,
@@ -1341,17 +1376,22 @@ export function initCreatures(
     bar.append(button("Abrir bestiário", () => void openBestiary()));
     inst.append(bar);
     if (instances.length > 0) {
+      const marked = instances.filter((c) => initSel.has(c.id));
       bar.append(
-        button("Iniciativa de todas", async () => {
+        button(marked.length === instances.length ? "Desmarcar todas" : "Marcar todas", () => {
+          if (marked.length === instances.length) initSel.clear();
+          else for (const c of instances) initSel.add(c.id);
+          render();
+        }),
+        button(`Iniciativa das marcadas (${marked.length})`, async () => {
+          if (marked.length === 0) return say("Marque as criaturas (caixinha à esquerda) que entram na iniciativa.");
           let combat = await loadCombat();
-          for (const c of instances) {
-            const total = rollDie(20) + creaturePerception(c).value;
-            combat = addCombatant(combat, { id: c.id, name: publicLink(c).name, value: total });
-          }
+          for (const c of marked) combat = addCombatant(combat, { id: c.id, name: publicLink(c).name, value: initiativeOf(c) });
           await saveCombat(combat);
-          say(`${instances.length} criatura(s) entraram na iniciativa.`);
+          say(`${marked.length} criatura(s) entraram na iniciativa.`);
         }),
       );
+      if (marked.length === 0) inst.append(el("p", "sub", "Marque as criaturas que entram na iniciativa. Você pode digitar o valor de cada uma; vazio rola d20 + Percepção."));
     }
     const iul = el("ul", "creatures");
     if (instances.length === 0) {
