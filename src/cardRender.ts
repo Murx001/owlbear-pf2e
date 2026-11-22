@@ -4,6 +4,7 @@ import { KIND_PT } from "./area";
 import { COND_BY_KEY } from "./conditions";
 import { DEGREE_TEXT, formulaText, signed, type RollMessage } from "./roll";
 import { STAT_PT, type SpellCast, type SpellTargetResult } from "./saveSpell";
+import { translate } from "./translate";
 import { damageParts, type SpellData } from "./spellData";
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) {
@@ -257,8 +258,10 @@ function spellInfoCard(
     ];
     for (const [k, v] of rows) if (v) root.append(row(k, v));
     const desc = el("div", "spell-desc");
-    for (const p of sp.info.description) desc.append(el("p", undefined, p));
+    const paras = sp.info.description.map((p) => el("p", undefined, p));
+    desc.append(...paras);
     root.append(desc);
+    if (sp.info.description.length > 0) root.append(translateButton(root, sp.info.description, paras, d.translated));
     root.append(el("p", "sub", automationNote(sp)));
   }
 
@@ -271,6 +274,56 @@ function spellInfoCard(
   }
 }
 
+/** Botão que alterna a descrição entre o original (inglês) e a tradução automática. */
+/** Tradução que o cartão está mostrando agora (vai junto no "Mostrar a todos"). */
+const shownTranslation = new WeakMap<HTMLElement, string[] | null>();
+
+function translateButton(
+  root: HTMLElement,
+  original: string[],
+  paras: HTMLElement[],
+  initial?: string[],
+): HTMLElement {
+  const wrap = el("div", "translate");
+  const b = el("button", "translate-btn", "Traduzir para PT-BR");
+  b.type = "button";
+  const note = el("span", "sub");
+  let translated: string[] | null = initial && initial.length === original.length ? initial : null;
+  let showing = false;
+  const show = () => {
+    paras.forEach((p, i) => (p.textContent = translated![i]));
+    showing = true;
+    shownTranslation.set(root, translated);
+    b.textContent = "Ver original (inglês)";
+    note.textContent = "Tradução automática: confira termos de regra.";
+  };
+  if (translated) show();
+  b.addEventListener("click", async () => {
+    if (showing) {
+      paras.forEach((p, i) => (p.textContent = original[i]));
+      showing = false;
+      shownTranslation.set(root, null);
+      b.textContent = "Traduzir para PT-BR";
+      note.textContent = "";
+      return;
+    }
+    b.disabled = true;
+    b.textContent = "Traduzindo…";
+    note.textContent = "";
+    try {
+      translated ??= await Promise.all(original.map((p) => translate(p)));
+      show();
+    } catch (e) {
+      b.textContent = "Traduzir para PT-BR";
+      note.textContent = `Não consegui traduzir: ${e instanceof Error ? e.message : "erro de rede"}.`;
+    } finally {
+      b.disabled = false;
+    }
+  });
+  wrap.append(b, note);
+  return wrap;
+}
+
 /** Rodapé: o botão discreto "Mostrar a todos" (ou quem mostrou, no cartão recebido). */
 function footer(root: HTMLElement, data: CardData, act: CardActions) {
   const foot = el("div", "card-foot");
@@ -281,7 +334,7 @@ function footer(root: HTMLElement, data: CardData, act: CardActions) {
     b.type = "button";
     b.title = "Mostra este cartão na tela de todos na sala";
     b.addEventListener("click", () => {
-      act.share!();
+      act.share!(shownTranslation.get(root) ?? undefined);
       b.textContent = "Mostrado ✓";
       b.disabled = true;
     });
@@ -295,7 +348,7 @@ export interface CardActions {
   /** Conjurar a magia (só no cartão aberto por quem vai conjurar). */
   cast?: (a: CastAction) => void;
   /** Mostrar este cartão a todos na sala. */
-  share?: () => void;
+  share?: (translated?: string[]) => void;
 }
 
 /** Desenha o cartão de qualquer rolagem ou magia dentro de `root`. */

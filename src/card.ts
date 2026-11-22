@@ -25,9 +25,11 @@ OBR.onReady(async () => {
         close();
       },
       // "Mostrar a todos": o mesmo cartão (sem o botão Conjurar) aparece na tela dos outros.
-      share: () => {
+      share: (translated) => {
         const copy: Record<string, unknown> = { ...shown, sharedBy: myName || "Alguém" };
         delete copy.cast;
+        // Se está lendo a tradução, os outros recebem o cartão traduzido também.
+        if (translated && shown.kind === "spellinfo") copy.translated = translated;
         void OBR.broadcast.sendMessage(CARD_SHARE, copy, { destination: "REMOTE" });
       },
     });

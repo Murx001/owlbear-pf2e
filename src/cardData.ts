@@ -44,6 +44,8 @@ export type CardData = (
       spell: SpellData | null;
       /** Presente só no cartão aberto por quem vai conjurar: mostra o botão Conjurar. */
       cast?: CastAction;
+      /** Descrição já traduzida (PT-BR) por quem mostrou: aparece traduzida para todos. */
+      translated?: string[];
     }
 ) & {
   /** Preenchido quando outra pessoa mostrou este cartão a todos. */

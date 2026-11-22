@@ -306,3 +306,6 @@ Ao acabar a condição (tempo contado na aba Combate, ou removida à mão), a **
 
 ### 42. Imunidades, fraquezas e resistências
 O dano das criaturas do mestre passa a ser ajustado **por tipo** (ataques, magias de salvaguarda e acerto automático): primeiro os multiplicadores (crítico ×2, salvaguarda básica), depois **imunidade** (zera), **fraqueza** (soma) e **resistência** (subtrai, mínimo 0; só a maior por tipo). "Físico" cobre cortante/perfurante/contundente; "exceto" é respeitado quando é um tipo de dano. Imunidade a acertos críticos devolve o dano crítico ao normal. O cartão mostra a linha **Defesas** (ex.: "resistência fire 5: −5"); para criaturas secretas aparece só "o dano foi ajustado pelas defesas do alvo". Fichas de jogador ainda não têm defesas.
+
+### 43. Tradução nos cartões de magia
+No cartão "o que esta magia faz", o botão **Traduzir para PT-BR** traduz a descrição (serviço gratuito MyMemory, com glossário de termos de regra e cache no navegador); **Ver original (inglês)** volta. Se você clicar em **Mostrar a todos** com a tradução na tela, o cartão chega **já traduzido** para os outros (que também podem ver o original). Tradução automática: confira termos de regra. Se o limite diário do serviço acabar, o cartão avisa.
