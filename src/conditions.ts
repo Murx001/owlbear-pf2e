@@ -36,6 +36,9 @@ export const CONDITIONS: CondDef[] = [
   { key: "unconscious", pt: "Inconsciente", valued: false },
   { key: "fleeing", pt: "Fugindo", valued: false },
   { key: "confused", pt: "Confuso", valued: false },
+  /* Bônus de CA (circunstância): o valor é o bônus. Não acumulam entre si, vale o maior. */
+  { key: "shield-raised", pt: "Escudo erguido", valued: true },
+  { key: "shield-spell", pt: "Magia Escudo", valued: false },
 ];
 
 export const COND_BY_KEY = new Map(CONDITIONS.map((c) => [c.key, c]));
@@ -74,7 +77,9 @@ export function acWithConditions(base: number, c: Conditions) {
   const circ = v(c, "off-guard") > 0 || v(c, "prone") > 0 ? 2 : 0;
   const status = Math.max(statusPenalty(c), v(c, "fatigued") > 0 ? 1 : 0);
   const penalty = circ + status;
-  return { value: base - penalty, penalty };
+  // Bônus de circunstância (escudo erguido, magia Escudo): não acumulam, vale o maior.
+  const bonus = Math.max(v(c, "shield-raised"), v(c, "shield-spell") > 0 ? 1 : 0);
+  return { value: base - penalty + bonus, penalty, bonus };
 }
 
 /** Condição "drenado" reduz o PV máximo em nível × valor. */
@@ -87,6 +92,7 @@ const GROUPS: [color: string, keys: string[]][] = [
   ["#c2693a", ["frightened", "sickened", "clumsy", "enfeebled", "stupefied", "drained", "fatigued", "off-guard", "prone"]],
   ["#7c6bd6", ["slowed", "stunned", "paralyzed", "unconscious", "immobilized", "restrained", "grabbed", "fleeing", "confused"]],
   ["#b23a48", ["dying", "wounded", "doomed"]],
+  ["#3f8f6b", ["shield-raised", "shield-spell"]],
   ["#3d7ca8", ["blinded", "dazzled", "deafened", "concealed", "hidden", "invisible"]],
 ];
 

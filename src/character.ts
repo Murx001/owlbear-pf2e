@@ -44,6 +44,8 @@ export interface Character {
   abilities: Record<Ability, number>; // modificadores
   hpMax: number;
   ac: number;
+  /** Bônus de CA do escudo equipado (0 se não há escudo). */
+  shieldBonus: number;
   speed: number;
   classDC: number;
   perception: Stat;

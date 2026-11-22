@@ -225,3 +225,11 @@ Confira nos dois painéis e nos cartões: fundo escuro com detalhes dourados, t�
 3. Marque cada opção e confira, numa janela de jogador, que só aquilo muda: o token surge/some, o nome real aparece, os PV viram "PV 12/20", as condições voltam como fichinhas.
 4. O mestre sempre vê tudo (CA, PV, condições). A CA nunca é revelada aos jogadores.
 5. Criaturas vinculadas antes desta versão passam a usar o padrão acima (nome "Criatura" até você ligar a opção).
+
+### 26. PV dentro da barra, CA no escudinho e bônus de CA
+1. No token vinculado, os **PV em números** ficam **dentro da barra** (ex.: "12/48 +5" com PV temporários). Sob o token fica só o nome.
+2. A **CA** aparece num **escudinho ao lado esquerdo** do token (as fichinhas de condição continuam à direita). Nas criaturas, só o mestre vê o escudo; os jogadores nunca veem a CA.
+3. **Erguer o escudo:** quem tem escudo na ficha (Pathbuilder) vê, na aba Agir, o botão "Erguer o escudo (CA +N)". Ao usar, a CA sobe N (no cabeçalho, na ficha e no escudinho), aparece a fichinha "Escudo erguido" e o bônus **cai no início do seu próximo turno** (na aba Combate). Clicar de novo abaixa o escudo.
+4. **Truque Escudo (Shield):** ao lançar (Linari tem preparado), a CA sobe **+1** até o início do seu próximo turno. Bônus de circunstância **não acumulam**: com o escudo erguido (+2) e a magia (+1) vale o maior (+2).
+5. Condições continuam mexendo na CA: Desprevenido/Caído −2 (circunstância, soma com o bônus do escudo), Amedrontado/Fatigado (status).
+6. Um ataque contra o personagem usa a CA **já com** o escudo.

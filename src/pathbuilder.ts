@@ -137,6 +137,7 @@ export function toCharacter(b: Raw, pathbuilderId?: string): Character {
     abilities: m,
     hpMax,
     ac: b.acTotal?.acTotal ?? 10,
+    shieldBonus: Number(b.acTotal?.shieldBonus ?? 0) || 0,
     speed: attrs.speed + (attrs.speedBonus ?? 0),
     classDC: 10 + m[keyAbility] + prof(p.classDC, level),
     perception: stat("perception", "Percepção", "wis", p.perception),

@@ -1,4 +1,4 @@
-import OBR, { buildShape, buildText, type Item } from "@owlbear-rodeo/sdk";
+import OBR, { buildPath, buildShape, buildText, type Item } from "@owlbear-rodeo/sdk";
 import { initAreaTool } from "./areaTool";
 import { listenRolls } from "./logStore";
 import { initSidebar, isLogOpen } from "./sidebar";
@@ -30,6 +30,9 @@ const idsFor = (token: string) => [
   `${MARK}/fill/${token}`,
   `${MARK}/txt/${token}`,
   `${MARK}/temp/${token}`,
+  `${MARK}/bartxt/${token}`,
+  `${MARK}/acbg/${token}`,
+  `${MARK}/actxt/${token}`,
 ];
 
 function colorFor(ratio: number): string {
@@ -57,7 +60,12 @@ interface Overlay {
   tokenId: string;
   visible: boolean;
   name: string;
+  /** Texto sob o nome (estado grosseiro das criaturas para os jogadores). */
   line: string;
+  /** PV em números, escritos dentro da barra (ex.: "12/48 +5"). Vazio: barra sem números. */
+  barText: string;
+  /** CA, no escudinho ao lado do token. Indefinida: sem escudo (CA secreta). */
+  ac?: number;
   hp: number;
   max: number;
   temp: number;
@@ -114,12 +122,13 @@ async function collectOverlays(): Promise<Overlay[]> {
       const st = states[pc.pathbuilderId];
       if (!st || !st.max) continue;
       const hp = Math.min(st.hp, st.max);
-      const hpText = `PV ${hp}/${st.max}${st.temp ? ` +${st.temp}` : ""}`;
       out.push({
         tokenId: token.id,
         visible: token.visible,
         name: pc.name,
-        line: st.ac !== undefined ? `CA ${st.ac} · ${hpText}` : hpText,
+        line: "",
+        barText: `${hp}/${st.max}${st.temp ? ` +${st.temp}` : ""}`,
+        ac: st.ac,
         hp,
         max: st.max,
         temp: st.temp,
@@ -138,7 +147,9 @@ async function collectOverlays(): Promise<Overlay[]> {
         tokenId: token.id,
         visible: token.visible,
         name: c.name,
-        line: `CA ${creatureAc(c).value} · PV ${hp}/${c.hpMax}${c.temp ? ` +${c.temp}` : ""}`,
+        line: "",
+        barText: `${hp}/${c.hpMax}${c.temp ? ` +${c.temp}` : ""}`,
+        ac: creatureAc(c).value,
         hp,
         max: c.hpMax,
         temp: c.temp,
@@ -151,7 +162,8 @@ async function collectOverlays(): Promise<Overlay[]> {
         tokenId: token.id,
         visible: token.visible,
         name: link.name,
-        line: [link.status, link.pv ? `PV ${link.pv}` : ""].filter(Boolean).join(" · "),
+        line: [link.status, link.noBar && link.pv ? `PV ${link.pv}` : ""].filter(Boolean).join(" · "),
+        barText: link.noBar ? "" : (link.pv ?? ""),
         hp: Math.round((link.ratio ?? 1) * 100),
         max: 100,
         temp: 0,
@@ -178,6 +190,8 @@ async function sync() {
     const key = [
       o.name,
       o.line,
+      o.barText,
+      o.ac ?? "",
       o.hp,
       o.max,
       o.temp,
@@ -193,10 +207,10 @@ async function sync() {
 
     const ratio = Math.max(0, Math.min(1, o.hp / o.max));
     const scale = Math.max(o.max, o.hp + o.temp); // a barra representa o PV máximo
-    const barH = Math.max(6, dpi * 0.12);
+    const barH = Math.max(o.barText ? 16 : 7, dpi * (o.barText ? 0.2 : 0.12));
     const barY = b.max.y - barH;
     const textW = Math.max(b.width, dpi * 1.5);
-    const [bgId, fillId, txtId, tempId] = idsFor(o.tokenId);
+    const [bgId, fillId, txtId, tempId, barTxtId, acBgId, acTxtId] = idsFor(o.tokenId);
 
     const rect = (id: string, name: string, x: number, w: number, color: string, opacity = 1) =>
       buildShape()
@@ -246,6 +260,95 @@ async function sync() {
         .metadata({ [MARK]: true })
         .build(),
     ];
+    if (o.bar && o.barText) {
+      items.push(
+        buildText()
+          .id(barTxtId)
+          .name("PF2e PV (números)")
+          .textType("PLAIN")
+          .plainText(o.barText)
+          .width(b.width)
+          .height(barH)
+          .padding(0)
+          .lineHeight(1)
+          .textAlign("CENTER")
+          .textAlignVertical("MIDDLE")
+          .fontSize(Math.max(9, barH * 0.68))
+          .fontWeight(700)
+          .fillColor("#ffffff")
+          .strokeColor("#10121c")
+          .strokeWidth(1.5)
+          .position({ x: b.min.x, y: barY })
+          .layer("TEXT")
+          .disableHit(true)
+          .locked(true)
+          .visible(o.visible)
+          .metadata({ [MARK]: true })
+          .build(),
+      );
+    }
+
+    // CA no escudinho, ao lado esquerdo do token (a coluna de condições fica à direita).
+    if (o.ac !== undefined) {
+      const sz = Math.max(26, dpi * 0.34);
+      const sx = b.min.x - sz - 4;
+      const sy = b.min.y;
+      const pt = (x: number, y: number) => [x * sz, y * sz];
+      const [x0, y0] = pt(0, 0);
+      const [x1] = pt(1, 0);
+      const [, y1] = pt(0, 0.55);
+      const [xm, ym] = pt(0.5, 1);
+      // Contorno de escudo: topo reto, laterais retas e a ponta embaixo.
+      const MOVE = 0, LINE = 1, CUBIC = 4, CLOSE = 5;
+      const commands = [
+        [MOVE, x0, y0],
+        [LINE, x1, y0],
+        [LINE, x1, y1],
+        [CUBIC, x1, sz * 0.82, sz * 0.72, sz * 0.95, xm, ym],
+        [CUBIC, sz * 0.28, sz * 0.95, x0, sz * 0.82, x0, y1],
+        [CLOSE],
+      ] as never;
+      items.push(
+        buildPath()
+          .id(acBgId)
+          .name("PF2e CA (escudo)")
+          .commands(commands)
+          .position({ x: sx, y: sy })
+          .fillColor("#1b1d2e")
+          .fillOpacity(0.92)
+          .strokeColor("#d3ae64")
+          .strokeWidth(2)
+          .layer("ATTACHMENT")
+          .disableHit(true)
+          .locked(true)
+          .visible(o.visible)
+          .metadata({ [MARK]: true })
+          .build(),
+        buildText()
+          .id(acTxtId)
+          .name("PF2e CA (número)")
+          .textType("PLAIN")
+          .plainText(String(o.ac))
+          .width(sz)
+          .height(sz * 0.8)
+          .padding(0)
+          .lineHeight(1)
+          .textAlign("CENTER")
+          .textAlignVertical("MIDDLE")
+          .fontSize(sz * 0.5)
+          .fontWeight(700)
+          .fillColor("#f2e3b8")
+          .strokeWidth(0)
+          .position({ x: sx, y: sy })
+          .layer("TEXT")
+          .disableHit(true)
+          .locked(true)
+          .visible(o.visible)
+          .metadata({ [MARK]: true })
+          .build(),
+      );
+    }
+
     if (o.bar && o.temp > 0) {
       items.push(
         rect(tempId, "PF2e PV temporário", b.min.x + b.width * (o.hp / scale), b.width * (o.temp / scale), TEMP_COLOR),

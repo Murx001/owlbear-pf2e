@@ -900,6 +900,44 @@ function commit(c: Character) {
   }
 }
 
+/** Liga um bônus de CA de circunstância (escudo) até o início do próximo turno do personagem. */
+function setAcEffect(c: Character, key: "shield-raised" | "shield-spell", bonus: number) {
+  state.conditions = { ...state.conditions, [key]: bonus };
+  state.durations = {
+    ...(state.durations ?? {}),
+    [key]: { mode: "self-start", remaining: 1, text: "até seu próximo turno" },
+  };
+  commit(c);
+}
+
+function clearAcEffect(c: Character, key: "shield-raised" | "shield-spell") {
+  const next = { ...state.conditions };
+  delete next[key];
+  state.conditions = next;
+  state.durations = pruneDurations(next, state.durations);
+  commit(c);
+}
+
+/** Ação Erguer um Escudo: liga e desliga o bônus de CA do escudo equipado. */
+function shieldRow(c: Character): HTMLElement | undefined {
+  const up = (state.conditions["shield-raised"] ?? 0) > 0;
+  if (c.shieldBonus <= 0 && !up) return undefined;
+  const row = el("div", "import");
+  const bonus = c.shieldBonus > 0 ? c.shieldBonus : state.conditions["shield-raised"];
+  const b = el("button", undefined, up ? `Abaixar o escudo (CA +${bonus})` : `Erguer o escudo (CA +${bonus})`);
+  b.type = "button";
+  b.addEventListener("click", () => {
+    if (up) clearAcEffect(c, "shield-raised");
+    else {
+      setAcEffect(c, "shield-raised", bonus);
+      say(`Escudo erguido: CA ${acWithConditions(c.ac, state.conditions).value} até o seu próximo turno.`);
+      void publishEvent(`ergueu o escudo (CA +${bonus}).`);
+    }
+  });
+  row.append(b);
+  return row;
+}
+
 function hpBlock(c: Character): HTMLElement {
   const max = hpMaxWithConditions(c.hpMax, c.level, state.conditions);
   const hp = Math.min(state.hp, max);
@@ -1112,15 +1150,17 @@ function renderSheet(c: Character) {
   };
   const ac = acWithConditions(c.ac, state.conditions);
   const acNum = num("CA", ac.value);
-  if (ac.penalty > 0) {
-    acNum.classList.add("penalized");
-    acNum.title = `Base ${c.ac}, −${ac.penalty} por condições`;
+  if (ac.penalty > 0 || ac.bonus > 0) {
+    if (ac.penalty > ac.bonus) acNum.classList.add("penalized");
+    acNum.title = `Base ${c.ac}${ac.bonus ? `, +${ac.bonus} de escudo` : ""}${ac.penalty ? `, −${ac.penalty} por condições` : ""}`;
   }
   nums.append(acNum, num("Desl.", `${c.speed} ft`), num("CD de classe", c.classDC));
   head.append(nums);
 
   fichaEl.append(head, hpBlock(c), conditionsBlock(c), tokenBlock(c));
   agirEl.append(targetField());
+  const shield = shieldRow(c);
+  if (shield) agirEl.append(shield);
   testesEl.append(targetField());
 
   const abilityNames: [keyof Character["abilities"], string][] = [
@@ -1332,7 +1372,9 @@ async function castCore(c: Character, o: CastOpts) {
       state.focusUsed = used + 1;
       left = `Restam ${c.focusPoints - used - 1} ponto(s) de foco.`;
     }
-    if (rank > 0 || o.spendsFocus) commit(c);
+    // Magia Escudo: +1 de circunstância na CA até o início do próximo turno (conta como erguer o escudo).
+    if (/^shield$/i.test(name)) setAcEffect(c, "shield-spell", 1);
+    else if (rank > 0 || o.spendsFocus) commit(c);
     say(`${name} conjurada. ${left}`.trim());
     if (announce) {
       const how = rank === 0 && !o.spendsFocus ? "lançou o truque" : "conjurou";
