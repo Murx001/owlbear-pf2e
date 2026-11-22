@@ -8,6 +8,7 @@ import { creatureAc, getCreature, type Creature, type CreatureAbility } from "./
 import { creatureAttackSelection } from "./creatureAttack";
 import { abilityCast } from "./creatureAbility";
 import { CARD_SHARE, type CardData } from "./cardData";
+import { aonSearch, fetchFeat } from "./featData";
 import {
   COND_BY_KEY,
   CONDITIONS,
@@ -1538,6 +1539,8 @@ function renderSheet(c: Character) {
     agirEl.append(section("Magias de foco", row, wrap));
   }
 
+  fichaEl.append(featsBlock(c));
+
   if (c.casters.length || c.focusPoints > 0) {
     const rest = el("button", undefined, "Descansar (recuperar espaços e foco)");
     rest.type = "button";
@@ -1549,6 +1552,60 @@ function renderSheet(c: Character) {
     });
     fichaEl.append(rest);
   }
+}
+
+const FEAT_TAG: Record<string, string> = {
+  "Class Feat": "Talento de classe",
+  "Ancestry Feat": "Talento de ancestralidade",
+  "Skill Feat": "Talento de perícia",
+  "General Feat": "Talento geral",
+  "Awarded Feat": "Talento concedido",
+  Heritage: "Herança",
+};
+
+/** Clique num talento ou característica: abre o cartão com a descrição (e o botão de traduzir). */
+async function openFeatCard(c: Character, name: string, kind: string, level: number) {
+  say(`Buscando ${name}…`);
+  const info = await fetchFeat(name, kind, level, {
+    className: c.className ?? "",
+    ancestry: c.ancestry ?? "",
+    heritage: c.heritage ?? "",
+  }).catch(() => null);
+  say("");
+  await showCard({ kind: "featinfo", name, tag: FEAT_TAG[kind] ?? "Característica", info, aon: aonSearch(name) });
+}
+
+/** Talentos e características importados do Pathbuilder, agrupados; cada um abre a descrição. */
+function featsBlock(c: Character): HTMLElement {
+  const box = el("div");
+  const groups: [string, { name: string; kind: string; level: number }[]][] = [];
+  for (const kind of Object.keys(FEAT_TAG)) {
+    const list = (c.feats ?? []).filter((f) => f.type === kind).map((f) => ({ name: f.name, kind, level: f.level }));
+    if (list.length) groups.push([FEAT_TAG[kind] + (list.length > 1 ? "s" : ""), list]);
+  }
+  const known = new Set(Object.keys(FEAT_TAG));
+  const others = (c.feats ?? []).filter((f) => !known.has(f.type)).map((f) => ({ name: f.name, kind: f.type, level: f.level }));
+  if (others.length) groups.push(["Outros talentos", others]);
+  const specials = (c.specials ?? []).map((name) => ({ name, kind: "special", level: c.level }));
+  if (specials.length) groups.push(["Características de classe e ancestralidade", specials]);
+  if (groups.length === 0) {
+    box.append(section("Habilidades", el("p", "sub", "Nenhum talento nesta ficha. Reimporte a ficha do Pathbuilder para atualizar.")));
+    return box;
+  }
+  const note = (c.specials ?? []).length === 0 ? el("p", "sub", "Reimporte a ficha para ver também as características de classe e ancestralidade.") : null;
+  const parts = groups.map(([title, list]) => {
+    const wrap = el("div", "chips");
+    for (const f of list) {
+      const b = el("button", "spell", f.level && f.kind !== "special" ? `${f.name} (${f.level})` : f.name);
+      b.type = "button";
+      b.title = "Ver a descrição";
+      b.addEventListener("click", () => void openFeatCard(c, f.name, f.kind, f.level));
+      wrap.append(b);
+    }
+    return section(title, wrap);
+  });
+  box.append(section("Habilidades", note ?? el("p", "sub", "Toque num item para ler a descrição, traduzir e mostrar a todos.")), ...parts);
+  return box;
 }
 
 /** Fileira de marcadores: cheio = disponível. Clicar num cheio gasta; num vazio devolve. */

@@ -1,6 +1,7 @@
 import type { AttackResult } from "./attack";
 import type { RollMessage } from "./roll";
 import type { SpellCast, SpellTargetResult } from "./saveSpell";
+import type { FeatInfo } from "./featData";
 import type { SpellData } from "./spellData";
 
 /** Id do popover do cartão (no centro da tela). */
@@ -36,6 +37,17 @@ export type CardData = (
       offline: boolean;
     }
   | { kind: "check"; msg: RollMessage }
+  | {
+      kind: "featinfo";
+      name: string;
+      /** "Talento de classe", "Característica"… */
+      tag: string;
+      /** `null` se não achamos no Foundry. */
+      info: FeatInfo | null;
+      /** Descrição já traduzida (PT-BR) por quem mostrou. */
+      translated?: string[];
+      aon: string;
+    }
   | {
       kind: "spellinfo";
       name: string;

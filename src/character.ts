@@ -59,4 +59,6 @@ export interface Character {
   focusSpells: string[];
   languages: string[];
   feats: { name: string; type: string; level: number }[];
+  /** Características de classe, ancestralidade etc. (campo `specials` do Pathbuilder). */
+  specials?: string[];
 }

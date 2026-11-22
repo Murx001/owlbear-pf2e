@@ -29,7 +29,7 @@ OBR.onReady(async () => {
         const copy: Record<string, unknown> = { ...shown, sharedBy: myName || "Alguém" };
         delete copy.cast;
         // Se está lendo a tradução, os outros recebem o cartão traduzido também.
-        if (translated && shown.kind === "spellinfo") copy.translated = translated;
+        if (translated && (shown.kind === "spellinfo" || shown.kind === "featinfo")) copy.translated = translated;
         void OBR.broadcast.sendMessage(CARD_SHARE, copy, { destination: "REMOTE" });
       },
     });

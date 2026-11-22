@@ -227,6 +227,34 @@ function automationNote(sp: SpellData): string {
   return "Sem automação: o efeito é aplicado por você. Este cartão serve de lembrete para todos na mesa.";
 }
 
+function featInfoCard(root: HTMLElement, d: Extract<CardData, { kind: "featinfo" }>, act: CardActions) {
+  root.className = "card spell";
+  const i = d.info;
+  root.append(header(d.name, [d.tag, i?.level ? `nível ${i.level}` : ""].filter(Boolean).join(" · "), act.close));
+  if (!i) {
+    const p = el("p", "sub", "Não encontrei a descrição nos dados do Foundry. ");
+    const a = el("a", undefined, "Procurar no Archives of Nethys");
+    a.href = d.aon;
+    a.target = "_blank";
+    a.rel = "noreferrer";
+    p.append(a);
+    root.append(p);
+    return;
+  }
+  if (i.traits.length > 0) {
+    const traits = el("div", "traits");
+    for (const t of i.traits) traits.append(el("span", "trait", t));
+    root.append(traits);
+  }
+  if (i.actions) root.append(row("Ações", i.actions));
+  if (i.prerequisites.length) root.append(row("Pré-requisitos", i.prerequisites.join("; ")));
+  const desc = el("div", "spell-desc");
+  const paras = i.description.map((p) => el("p", undefined, p));
+  desc.append(...paras);
+  root.append(desc);
+  if (i.description.length > 0) root.append(translateButton(root, i.description, paras, d.translated));
+}
+
 function spellInfoCard(
   root: HTMLElement,
   d: Extract<CardData, { kind: "spellinfo" }>,
@@ -366,6 +394,9 @@ export function renderCard(root: HTMLElement, data: CardData, act: CardActions) 
       break;
     case "spellinfo":
       spellInfoCard(root, data, act);
+      break;
+    case "featinfo":
+      featInfoCard(root, data, act);
       break;
   }
   footer(root, data, act);

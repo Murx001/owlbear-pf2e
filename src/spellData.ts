@@ -171,7 +171,7 @@ function parseOutcomes(html: string): SpellData["outcomes"] {
 }
 
 /** Descrição em parágrafos (quebra em </p>, <br> e <hr>). */
-function paragraphs(html: string): string[] {
+export function paragraphs(html: string): string[] {
   const marked = html.replace(/<\/p>|<br\s*\/?>|<hr[^>]*>/gi, "\u0001");
   return toText(marked)
     .split("\u0001")

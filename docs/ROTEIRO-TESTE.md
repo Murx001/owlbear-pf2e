@@ -309,3 +309,6 @@ O dano das criaturas do mestre passa a ser ajustado **por tipo** (ataques, magia
 
 ### 43. Tradução nos cartões de magia
 No cartão "o que esta magia faz", o botão **Traduzir para PT-BR** traduz a descrição (serviço gratuito MyMemory, com glossário de termos de regra e cache no navegador); **Ver original (inglês)** volta. Se você clicar em **Mostrar a todos** com a tradução na tela, o cartão chega **já traduzido** para os outros (que também podem ver o original). Tradução automática: confira termos de regra. Se o limite diário do serviço acabar, o cartão avisa.
+
+### 44. Talentos e características na ficha
+Na aba **Ficha**, a seção **Habilidades** lista os talentos importados do Pathbuilder (classe, ancestralidade, perícia, geral, herança, concedidos) e as **características de classe e ancestralidade**. Tocar num item abre o cartão com a descrição do Foundry (ações, traços, pré-requisitos), o botão **Traduzir para PT-BR** e **Mostrar a todos** (que envia traduzido se estiver traduzido). O que o Foundry não tem (ex.: Thralls, Nephilim) mostra um link para o Archives of Nethys. Fichas importadas antes desta versão precisam ser **reimportadas** para ganhar as características de classe.

@@ -157,5 +157,6 @@ export function toCharacter(b: Raw, pathbuilderId?: string): Character {
     focusSpells: focusList(b.focus, "focusSpells"),
     languages: b.languages ?? [],
     feats,
+    specials: ((b.specials as unknown[]) ?? []).map(String),
   };
 }
