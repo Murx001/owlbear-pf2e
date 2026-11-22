@@ -998,3 +998,20 @@ input.init-val {
   width: 64px;
   flex: none;
 }
+
+/* ---------- Agir: Ataques e magias / Manobras ---------- */
+.subtabs {
+  display: flex;
+  gap: 6px;
+  margin: 6px 0;
+}
+.subtabs button {
+  flex: 1;
+  min-height: 34px;
+  opacity: 0.75;
+}
+.subtabs button.active {
+  opacity: 1;
+  border-color: #a99bff;
+  font-weight: 700;
+}

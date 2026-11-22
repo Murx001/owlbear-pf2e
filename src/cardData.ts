@@ -1,4 +1,5 @@
 import type { AttackResult } from "./attack";
+import type { ManeuverResult } from "./maneuver";
 import type { RollMessage } from "./roll";
 import type { SpellCast, SpellTargetResult } from "./saveSpell";
 import type { FeatInfo } from "./featData";
@@ -37,6 +38,7 @@ export type CardData = (
       offline: boolean;
     }
   | { kind: "check"; msg: RollMessage }
+  | { kind: "maneuver"; result: ManeuverResult }
   | {
       kind: "featinfo";
       name: string;

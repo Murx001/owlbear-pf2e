@@ -2,6 +2,7 @@ import OBR from "@owlbear-rodeo/sdk";
 import { resolveAgainst, type AttackResult, type AttackSpec } from "./attack";
 import {
   creatureAc,
+  creaturePerception,
   creatureSave,
   damageCreature,
   defensesOf,
@@ -10,6 +11,7 @@ import {
   type Creature,
 } from "./creatures";
 import { toDuration, type Durations } from "./durations";
+import { maneuverById, resolveManeuver, type ManeuverId, type ManeuverResult, type ManeuverSpec } from "./maneuver";
 import { publishEvent } from "./roll";
 import {
   resolveAutoSpell,
@@ -30,6 +32,8 @@ const SPELL_REQ = "pf2e.dice/spell-request";
 const ACK = "pf2e.dice/attack-ack";
 const ATTACK_RESULT = "pf2e.dice/attack-result";
 const SPELL_RESULT = "pf2e.dice/spell-result";
+const MAN_REQ = "pf2e.dice/maneuver-request";
+const MAN_RESULT = "pf2e.dice/maneuver-result";
 const WAIT_MS = 6000;
 
 interface AttackRequest {
@@ -42,6 +46,7 @@ interface AttackRequest {
 const waiting = new Map<string, (ok: boolean) => void>();
 const results = new Map<string, (r: AttackResult | null) => void>();
 const spellResults = new Map<string, (r: SpellTargetResult[]) => void>();
+const manResults = new Map<string, (r: ManeuverResult | null) => void>();
 const RESULT_WAIT_MS = 15000;
 
 export function listenAttackAcks() {
@@ -54,6 +59,11 @@ export function listenAttackAcks() {
     const m = event.data as { requestId: string; result: AttackResult | null };
     results.get(m.requestId)?.(m.result);
     results.delete(m.requestId);
+  });
+  OBR.broadcast.onMessage(MAN_RESULT, (event) => {
+    const m = event.data as { requestId: string; result: ManeuverResult | null };
+    manResults.get(m.requestId)?.(m.result);
+    manResults.delete(m.requestId);
   });
   OBR.broadcast.onMessage(SPELL_RESULT, (event) => {
     const m = event.data as { requestId: string; results: SpellTargetResult[] };
@@ -88,6 +98,41 @@ export async function sendCreatureAttack(
   const online = await ack;
   if (!online) {
     results.delete(requestId);
+    return { online: false, result: null };
+  }
+  return { online: true, result: await result };
+}
+
+interface ManeuverRequest {
+  requestId: string;
+  spec: ManeuverSpec;
+  maneuver: ManeuverId;
+  creatureId: string;
+}
+
+/** Manobra contra uma criatura: o mestre rola contra a CD dela (Fortitude, Reflexos, Vontade ou Percepção). */
+export async function sendCreatureManeuver(
+  spec: ManeuverSpec,
+  maneuver: ManeuverId,
+  creatureId: string,
+): Promise<{ online: boolean; result: ManeuverResult | null }> {
+  const requestId = crypto.randomUUID();
+  const ack = new Promise<boolean>((resolve) => {
+    waiting.set(requestId, resolve);
+    window.setTimeout(() => {
+      if (waiting.delete(requestId)) resolve(false);
+    }, WAIT_MS);
+  });
+  const result = new Promise<ManeuverResult | null>((resolve) => {
+    manResults.set(requestId, resolve);
+    window.setTimeout(() => {
+      if (manResults.delete(requestId)) resolve(null);
+    }, RESULT_WAIT_MS);
+  });
+  const req: ManeuverRequest = { requestId, spec, maneuver, creatureId };
+  await OBR.broadcast.sendMessage(MAN_REQ, req, { destination: "ALL" });
+  if (!(await ack)) {
+    manResults.delete(requestId);
     return { online: false, result: null };
   }
   return { online: true, result: await result };
@@ -142,6 +187,9 @@ export function creatureSaveTarget(id: string, fallback: Creature): SaveTarget {
     async saveMod(stat) {
       const c = getCreature(id) ?? fallback;
       return creatureSave(c, stat).value; // já com as condições (Amedrontado, Desajeitado…)
+    },
+    async perceptionMod() {
+      return creaturePerception(getCreature(id) ?? fallback).value;
     },
     async applyDamage(total) {
       const fresh = getCreature(id) ?? fallback;
@@ -220,6 +268,23 @@ export async function startGmResolver(onChange: () => void) {
       { requestId: req.requestId, results: out },
       { destination: "ALL" },
     );
+  });
+
+  OBR.broadcast.onMessage(MAN_REQ, async (event) => {
+    const req = event.data as ManeuverRequest;
+    await OBR.broadcast.sendMessage(ACK, { requestId: req.requestId }, { destination: "ALL" });
+    const creature = getCreature(req.creatureId);
+    let result: ManeuverResult | null = null;
+    try {
+      if (creature) result = await resolveManeuver(req.spec, maneuverById(req.maneuver), creatureSaveTarget(req.creatureId, creature));
+      else await publishEvent("tentou uma manobra, mas o alvo não tem dados cadastrados pelo mestre.");
+    } catch (e) {
+      await publishEvent(e instanceof Error ? e.message : "A manobra não pôde ser resolvida.");
+    } finally {
+      onChange();
+      // O resultado já vem sem a CD e sem PV (alvo secreto).
+      await OBR.broadcast.sendMessage(MAN_RESULT, { requestId: req.requestId, result }, { destination: "ALL" });
+    }
   });
 
   OBR.broadcast.onMessage(REQ, async (event) => {

@@ -39,7 +39,8 @@ import {
 import { describeResult, hit, mapFor, resolveAttack, type AttackResult, type AttackSpec } from "./attack";
 import { onCombatChange } from "./combat";
 import { initCreatures } from "./creaturesUi";
-import { listenAttackAcks, sendCreatureAttack, sendCreatureSpell } from "./gmResolver";
+import { listenAttackAcks, sendCreatureAttack, sendCreatureManeuver, sendCreatureSpell } from "./gmResolver";
+import { DC_PT, MANEUVERS, maneuverById, resolveManeuver, type Maneuver, type ManeuverId, type ManeuverResult, type ManeuverSpec } from "./maneuver";
 import {
   STAT_PT,
   describeSpellResult,
@@ -303,6 +304,8 @@ type AttackPending = PendingBase & {
   damage?: AttackSpec["damage"];
   /** Alcance em pés (ataques de magia). Armas não têm: o Pathbuilder não informa o alcance. */
   rangeFeet?: number;
+  /** Manobra (Agarrar, Derrubar…): perícia contra a CD do alvo, em vez de ataque contra a CA. */
+  maneuver?: ManeuverId;
 };
 type SpellPending = PendingBase & {
   kind: "spell";
@@ -350,6 +353,8 @@ function confirmRoll(
   lines: string[],
   /** Em ataques: nome do alvo, para oferecer a opção "alvo flanqueado". */
   flankTarget?: string,
+  /** Manobras: sem a opção de flanqueio (só MAP). */
+  opts?: { flank?: boolean },
 ): Promise<{ ok: boolean; flanked: boolean; bonus: number; map: MapMode }> {
   return new Promise((resolve) => {
     targetingEl.hidden = true; // uma coisa de cada vez na barra de ação
@@ -374,7 +379,7 @@ function confirmRoll(
 
     // Flanqueio: o alvo fica Desprevenido (−2 na CA) contra este ataque.
     let box: HTMLInputElement | undefined;
-    if (flankTarget !== undefined) {
+    if (flankTarget !== undefined && opts?.flank !== false) {
       const label = el("label", "flank-option");
       box = el("input");
       box.type = "checkbox";
@@ -704,6 +709,70 @@ async function beginAttack(
   setTargeting({ kind: "attack", title, bonus, damage, startSelection, consume, rangeFeet });
 }
 
+/** Clique numa manobra: pede o alvo no mapa (mesma faixa dos ataques), pergunta e rola contra a CD dele. */
+async function beginManeuver(m: Maneuver, bonus: number) {
+  const startSelection = ((await OBR.player.getSelection()) ?? []).join(",");
+  setTargeting({ kind: "attack", title: m.name, bonus, startSelection, maneuver: m.id });
+}
+
+/** Rola a manobra no alvo escolhido (ficha de jogador ou criatura do mestre) e aplica as condições. */
+async function resolveManeuverOn(p: AttackPending, targetName: string, creatureId: string | undefined, pbId: string | undefined) {
+  if (!current) return;
+  const m = maneuverById(p.maneuver!);
+  const penalty = m.attack ? mapFor(attackNumber) : 0;
+  const lines = [
+    `Alvo: ${targetName}`,
+    `${m.skillName}: d20 ${signed(p.bonus)}${penalty ? ` −${penalty} (ataques múltiplos)` : ""}`,
+    `Contra a CD de ${DC_PT[m.dc]} do alvo`,
+  ];
+  if (m.attack) {
+    const next = mapFor(attackNumber + 1);
+    lines.push(`Ataque nº ${attackNumber}: MAP ${penalty ? `−${penalty}` : "0"} · o próximo terá ${next ? `−${next}` : "0"}`);
+  }
+  const answer = await confirmRoll(p.title, lines, m.attack ? targetName : undefined, { flank: false });
+  if (!answer.ok) return;
+
+  setTargeting(null);
+  const spec: ManeuverSpec = {
+    attackerName: current.name,
+    attackerColor: await OBR.player.getColor(),
+    sourceId: current.pathbuilderId,
+    title: p.title,
+    bonus: p.bonus + answer.bonus,
+    mapPenalty: m.attack && answer.map !== "none" ? penalty : 0,
+  };
+  if (m.attack) attackNumber += answer.map === "none" ? 0 : answer.map === "double" ? 2 : 1;
+
+  try {
+    let result: ManeuverResult | null;
+    if (creatureId) {
+      say(`Manobra enviada ao mestre contra ${targetName}…`);
+      const r = await sendCreatureManeuver(spec, m.id, creatureId);
+      if (!r.online) {
+        say("O mestre não respondeu. Ele precisa estar na sala com a extensão ativa.", true);
+        if (current) renderSheet(current);
+        return;
+      }
+      result = r.result;
+    } else {
+      result = await resolveManeuver(spec, m, pcSaveTarget(pbId!, targetName));
+    }
+    if (result) {
+      void showCard({ kind: "maneuver", result });
+      // Efeitos em quem fez a manobra (ex.: cair no chão ao falhar criticamente) valem na ficha dele.
+      if (result.self.length > 0 && current.pathbuilderId) {
+        await pcSaveTarget(current.pathbuilderId, current.name).applyConditions(result.self, current.pathbuilderId);
+      }
+      say(`${p.title} em ${targetName}: ${DEGREE_TEXT[result.degree]}. ${result.text}`);
+    } else {
+      say("O mestre não conseguiu resolver a manobra (alvo sem dados cadastrados).", true);
+    }
+  } catch (e) {
+    say(e instanceof Error ? e.message : "Não foi possível resolver a manobra.", true);
+  }
+  if (current) renderSheet(current);
+}
+
 async function askSpellTarget(
   title: string,
   cast: SpellCast,
@@ -769,6 +838,10 @@ async function onTargetPicked(tokenId: string) {
   const far = await rangeError(tokenId, targetName);
   if (far) {
     warn(far);
+    return;
+  }
+  if (p.maneuver) {
+    await resolveManeuverOn(p, targetName, creature?.id, link?.pathbuilderId);
     return;
   }
   const penalty = mapFor(attackNumber);
@@ -949,6 +1022,63 @@ function mapRow(): HTMLElement {
   });
   row.append(txt, reset);
   return row;
+}
+
+/** Manobras: cada uma rola uma perícia contra a CD do alvo e aplica as condições do resultado. */
+function maneuversBlock(c: Character): HTMLElement {
+  const box = el("div");
+  const rows = MANEUVERS.map((m) => {
+    const skill = c.skills.find((x) => x.key === m.skill);
+    const row = el("div", "attack");
+    const name = el("span", "aname");
+    name.append(el("strong", undefined, m.name), el("span", "sub", m.hint));
+    name.style.display = "flex";
+    name.style.flexDirection = "column";
+    row.append(name);
+    if (skill) {
+      row.append(
+        rollButton(m.skillName, skill.total, m.name, RANK_LETTER[skill.rank] ?? "", { ability: skill.ability }, (bonus) => void beginManeuver(m, bonus)),
+      );
+    } else row.append(el("span", "sub", "perícia não encontrada"));
+    return row;
+  });
+  const next = mapFor(attackNumber);
+  box.append(
+    section(
+      "Manobras",
+      el("p", "sub", `Escolha a manobra e depois o token do alvo no mapa. Agarrar, Derrubar, Empurrar e Desarmar contam como ataque (ataque nº ${attackNumber}, MAP ${next ? `−${next}` : "0"}).`),
+      ...rows,
+    ),
+  );
+  return box;
+}
+
+let agirView: "acoes" | "manobras" = "acoes";
+
+/** Aba Agir com duas partes: Ataques e magias / Manobras (o campo de bônus extra fica sempre no topo). */
+function splitAgir(c: Character) {
+  const kids = [...agirEl.children];
+  const top = kids.shift();
+  const acoes = el("div", "agir-view");
+  acoes.append(...kids);
+  const man = maneuversBlock(c);
+  man.classList.add("agir-view");
+  const tabs = el("div", "subtabs");
+  const mk = (id: "acoes" | "manobras", text: string) => {
+    const b = el("button", id === agirView ? "active" : undefined, text);
+    b.type = "button";
+    b.addEventListener("click", () => {
+      agirView = id;
+      acoes.hidden = id !== "acoes";
+      man.hidden = id !== "manobras";
+      for (const x of tabs.querySelectorAll("button")) x.classList.toggle("active", x === b);
+    });
+    return b;
+  };
+  tabs.append(mk("acoes", "Ataques e magias"), mk("manobras", "Manobras"));
+  acoes.hidden = agirView !== "acoes";
+  man.hidden = agirView !== "manobras";
+  agirEl.replaceChildren(...(top ? [top] : []), tabs, acoes, man);
 }
 
 function statButton(s: Stat): HTMLButtonElement {
@@ -1575,6 +1705,7 @@ function renderSheet(c: Character) {
     agirEl.append(section("Magias de foco", row, wrap));
   }
 
+  splitAgir(c);
   fichaEl.append(featsBlock(c));
 
   if (c.casters.length || c.focusPoints > 0) {

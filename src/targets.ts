@@ -21,6 +21,15 @@ export function pcSaveTarget(pbId: string, name: string): SaveTarget {
       const st = await loadState(pbId);
       return withConditions(s.total, st?.conditions ?? {}, { ability: s.ability, isSave: true }).value;
     },
+    async perceptionMod() {
+      let ch = builds.get(pbId);
+      if (!ch) {
+        ch = toCharacter(await fetchBuild(pbId), pbId);
+        builds.set(pbId, ch);
+      }
+      const st = await loadState(pbId);
+      return withConditions(ch.perception.total, st?.conditions ?? {}, { ability: ch.perception.ability }).value;
+    },
     async applyDamage(total) {
       const st = await loadState(pbId);
       if (!st) throw new Error(`${name} ainda não tem estado na sala. Reimporte a ficha dele.`);

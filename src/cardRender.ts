@@ -1,4 +1,5 @@
 import { hit, type AttackResult } from "./attack";
+import { DC_PT, type ManeuverResult } from "./maneuver";
 import type { CardData, CastAction } from "./cardData";
 import { KIND_PT } from "./area";
 import { COND_BY_KEY } from "./conditions";
@@ -90,6 +91,33 @@ function attackCard(root: HTMLElement, r: AttackResult, nextPenalty: number, onC
       "pen",
     ),
   );
+}
+
+/* ---------- manobra ---------- */
+function maneuverCard(root: HTMLElement, r: ManeuverResult, onClose: () => void) {
+  root.className = `card ${r.degree}`;
+  root.append(header(`${r.attacker} → ${r.target}`, r.title, onClose));
+  const t = el("span");
+  t.append(
+    `d20 ${r.natural} ${signed(r.bonus)}`,
+    r.mapPenalty > 0 ? ` −${r.mapPenalty}` : "",
+    " = ",
+    strong(String(r.total)),
+    r.dc !== undefined ? " contra " : ` contra a CD de ${DC_PT[r.dcKind]} do alvo`,
+  );
+  if (r.dc !== undefined) t.append(strong(`CD ${r.dc}`), ` (${DC_PT[r.dcKind]})`);
+  t.append(" → ", strong(DEGREE_TEXT[r.degree]));
+  root.append(row("Teste", t, "big"));
+  root.append(row("Efeito", r.text));
+  if (r.conditions.length > 0) {
+    root.append(row("No alvo", r.conditions.map((c) => `${COND_BY_KEY.get(c.key)?.pt ?? c.key}${c.value > 1 ? ` ${c.value}` : ""}${c.duration ? ` (${c.duration.text})` : ""}`).join(", ")));
+  }
+  if (r.self.length > 0) {
+    root.append(row("Em você", r.self.map((c) => `${COND_BY_KEY.get(c.key)?.pt ?? c.key}${c.duration ? ` (${c.duration.text})` : ""}`).join(", "), "down"));
+  }
+  if (r.damage) {
+    root.append(row("Dano", `${r.damage.final} ${r.damage.type}${r.damage.adjust?.length ? ` · ${r.damage.adjust.join("; ")}` : ""}`));
+  }
 }
 
 /* ---------- magia ---------- */
@@ -391,6 +419,9 @@ export function renderCard(root: HTMLElement, data: CardData, act: CardActions) 
       break;
     case "check":
       checkCard(root, data.msg, act.close);
+      break;
+    case "maneuver":
+      maneuverCard(root, data.result, act.close);
       break;
     case "spellinfo":
       spellInfoCard(root, data, act);

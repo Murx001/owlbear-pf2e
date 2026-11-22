@@ -26,6 +26,8 @@ export interface SaveTarget {
   defenses?: Defenses;
   /** Modificador total da salvaguarda, já com condições. */
   saveMod(stat: SaveStat): Promise<number>;
+  /** Modificador de Percepção (CD de Fintar), já com condições. */
+  perceptionMod?(): Promise<number>;
   applyDamage(total: number): Promise<DamageResult>;
   /** `sourceId`: quem lançou, para contar as durações nos turnos dele. */
   applyConditions(list: SpellCondition[], sourceId?: string): Promise<void>;
