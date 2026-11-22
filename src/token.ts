@@ -44,6 +44,10 @@ export interface CreatureLink {
   name: string;
   status: string;
   ratio: number;
+  /** O mestre escondeu o estado de PV: o token mostra só o nome, sem barra. */
+  noBar?: boolean;
+  /** PV em números (ex.: "12/20"), só quando o mestre libera. */
+  pv?: string;
   /** Condições da criatura, visíveis a todos (aparecem como tags no token). */
   conditions?: Record<string, number>;
   /** Tempo restante das condições, para mostrar nas tags. */
@@ -91,6 +95,7 @@ export async function linkCreatureTokens(
       const link = byToken.get(item.id);
       if (!link) continue;
       item.metadata[CREATURE_KEY] = link;
+      item.visible = false; // criatura nova começa escondida dos jogadores; o mestre revela na engrenagem
       delete item.metadata[KEY]; // um token é ficha de jogador OU criatura
     }
   });

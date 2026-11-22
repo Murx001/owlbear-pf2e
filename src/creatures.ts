@@ -6,6 +6,34 @@ import type { Durations } from "./durations";
  */
 const STORE = "pf2e.creatures";
 
+import type { CreatureLink } from "./token";
+
+/** O que os jogadores veem desta criatura. Tudo visível, a menos que o mestre desligue (engrenagem). */
+export interface CreatureShow {
+  /** O token aparece no mapa para os jogadores (padrão: escondido). */
+  token?: boolean;
+  /** O nome real; desligado mostra "Criatura" (padrão: escondido). */
+  name?: boolean;
+  /** Barra e estado de PV (Ileso, Ferido…), sem números (padrão: visível). */
+  bar?: boolean;
+  /** PV em números, como 12/20 (padrão: escondido). */
+  numbers?: boolean;
+  /** Condições nas fichinhas do token (padrão: escondidas). */
+  conditions?: boolean;
+}
+
+/** Visibilidade já com os padrões: tudo escondido, menos a barra de PV. */
+export function showOf(c: Pick<Creature, "show">): Required<CreatureShow> {
+  const s = c.show ?? {};
+  return {
+    token: s.token ?? false,
+    name: s.name ?? false,
+    bar: s.bar ?? true,
+    numbers: s.numbers ?? false,
+    conditions: s.conditions ?? false,
+  };
+}
+
 export interface Creature {
   id: string;
   name: string;
@@ -41,6 +69,8 @@ export interface Creature {
   templateId?: string;
   /** Token do mapa a que esta instância está ligada. */
   tokenId?: string;
+  /** Visibilidade para os jogadores. */
+  show?: CreatureShow;
 }
 
 export interface CreatureAttack {
@@ -91,6 +121,22 @@ export function statusOf(c: Pick<Creature, "hp" | "hpMax">): Status {
   if (r > 0.5) return { key: "hurt", label: "Ferido", ratio: 0.75 };
   if (r > 0.25) return { key: "bloodied", label: "Muito ferido", ratio: 0.4 };
   return { key: "critical", label: "Crítico", ratio: 0.15 };
+}
+
+/** Resumo público da criatura (vai no token), já sem o que o mestre escondeu. */
+export function publicLink(c: Creature): CreatureLink {
+  const sh = showOf(c);
+  const s = statusOf(c);
+  return {
+    id: c.id,
+    name: sh.name ? c.name : "Criatura",
+    status: sh.bar ? s.label : "",
+    ratio: sh.bar ? s.ratio : 1,
+    conditions: sh.conditions ? (c.conditions ?? {}) : {},
+    durations: sh.conditions ? c.durations : undefined,
+    ...(sh.bar ? {} : { noBar: true }),
+    ...(sh.numbers ? { pv: `${Math.max(0, c.hp)}/${c.hpMax}${c.temp ? ` +${c.temp}` : ""}` } : {}),
+  };
 }
 
 export function loadCreatures(): Creature[] {

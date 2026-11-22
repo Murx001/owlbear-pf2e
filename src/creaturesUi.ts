@@ -14,6 +14,8 @@ import {
   makeInstances,
   removeCreature,
   statusOf,
+  publicLink,
+  showOf,
   upsertCreature,
   type Creature,
 } from "./creatures";
@@ -243,10 +245,9 @@ export function initCreatures(root: HTMLElement) {
       for (const inst of made) upsertCreature(inst);
       await linkCreatureTokens(
         made.map((inst) => {
-          const s = statusOf(inst);
           return {
             tokenId: inst.tokenId!,
-            link: { id: inst.id, name: inst.name, status: s.label, ratio: s.ratio },
+            link: publicLink(inst),
           };
         }),
       );
@@ -447,6 +448,38 @@ export function initCreatures(root: HTMLElement) {
   }
 
   /* ---------- instância (um token) ---------- */
+  const gearOpen = new Set<string>();
+
+  /** Engrenagem: o que os jogadores enxergam desta criatura. */
+  function visibilityPanel(c: Creature): HTMLElement {
+    const box = el("div", "visibility");
+    box.append(el("strong", undefined, "Visível aos jogadores"));
+    const row = (label: string, key: keyof NonNullable<Creature["show"]>, apply?: (on: boolean) => Promise<void>) => {
+      const lab = el("label", "manual-toggle");
+      const cb = el("input");
+      cb.type = "checkbox";
+      cb.checked = showOf(c)[key];
+      cb.addEventListener("change", () => {
+        upsertCreature({ ...c, show: { ...(c.show ?? {}), [key]: cb.checked } });
+        void apply?.(cb.checked).catch((e) => say(e instanceof Error ? e.message : "Não foi possível mudar."));
+        render();
+      });
+      lab.append(cb, " " + label);
+      box.append(lab);
+    };
+    row("O token no mapa", "token", async (on) => {
+      if (!c.tokenId) return;
+      await OBR.scene.items.updateItems([c.tokenId], (items) => {
+        for (const it of items) it.visible = on;
+      });
+    });
+    row("O nome (desligado: \"Criatura\")", "name");
+    row("A barra e o estado de PV (sem números)", "bar");
+    row("Os PV em números", "numbers");
+    row("As condições nas fichinhas", "conditions");
+    return box;
+  }
+
   function instanceCard(c: Creature): HTMLElement {
     const s = statusOf(c);
     const li = el("li", "creature");
@@ -461,7 +494,9 @@ export function initCreatures(root: HTMLElement) {
         `CA ${ac.value}${ac.penalty > 0 ? ` (base ${c.ac})` : ""} · PV ${c.hp}/${c.hpMax}${c.temp ? ` +${c.temp}` : ""} · ${s.label}`,
       ),
     );
+    head.append(summaryButton("⚙", () => { gearOpen.has(c.id) ? gearOpen.delete(c.id) : gearOpen.add(c.id); render(); }, "gear"));
     li.append(head);
+    if (gearOpen.has(c.id)) li.append(visibilityPanel(c));
 
     // Salvaguardas e Percepção já com as condições; o que mudou fica destacado.
     const eff = el("div", "sub");

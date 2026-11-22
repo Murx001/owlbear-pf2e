@@ -218,3 +218,10 @@ Confira nos dois painéis e nos cartões: fundo escuro com detalhes dourados, t�
 2. Depois de vinculado, ao reabrir a extensão a ficha **já vem fixa** ("Ficha fixada ao seu token") e o campo de importar some.
 3. Tocar no token de **outro jogador** não abre a ficha dele. O **mestre** (dono da sala) abre qualquer ficha tocando no token.
 4. Tokens vinculados antes desta versão valem para quem os criou.
+
+### 25. Engrenagem de visibilidade das criaturas (mestre)
+1. Em **Em jogo**, cada criatura tem uma engrenagem **⚙**. Ela abre "Visível aos jogadores" com cinco opções separadas: **o token no mapa**, **o nome**, **a barra e o estado de PV (sem números)**, **os PV em números** e **as condições nas fichinhas**.
+2. **Padrão** de uma criatura recém-vinculada: token **escondido** dos jogadores, nome "Criatura", sem condições, sem números. A **barra de PV** aparece (só com o estado: Ileso, Ferido…).
+3. Marque cada opção e confira, numa janela de jogador, que só aquilo muda: o token surge/some, o nome real aparece, os PV viram "PV 12/20", as condições voltam como fichinhas.
+4. O mestre sempre vê tudo (CA, PV, condições). A CA nunca é revelada aos jogadores.
+5. Criaturas vinculadas antes desta versão passam a usar o padrão acima (nome "Criatura" até você ligar a opção).

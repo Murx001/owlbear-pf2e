@@ -5,7 +5,7 @@ import { initSidebar, isLogOpen } from "./sidebar";
 import { CARD_SHARE, type CardData } from "./cardData";
 import { showCard } from "./cardView";
 import { condTags, type ConditionTag } from "./conditions";
-import { creatureAc, getCreature, statusOf } from "./creatures";
+import { creatureAc, getCreature, publicLink } from "./creatures";
 import { startGmResolver } from "./gmResolver";
 import { parse, type All } from "./state";
 import { CREATURE_KEY, LINK_KEY, isCreatureLink, isLink, type CreatureLink } from "./token";
@@ -63,6 +63,8 @@ interface Overlay {
   temp: number;
   /** Condições ativas, desenhadas como fichinhas acima do token. */
   tags: ConditionTag[];
+  /** Mostra a barra de PV (o mestre pode esconder dos jogadores). */
+  bar: boolean;
 }
 
 
@@ -74,13 +76,15 @@ async function publishCreatureStatuses() {
     const link = t.metadata[CREATURE_KEY] as CreatureLink;
     const c = getCreature(link.id);
     if (!c) return false;
-    const s = statusOf(c);
+    const p = publicLink(c);
     return (
-      link.status !== s.label ||
-      link.ratio !== s.ratio ||
-      link.name !== c.name ||
-      JSON.stringify(link.conditions ?? {}) !== JSON.stringify(c.conditions ?? {}) ||
-      JSON.stringify(link.durations ?? {}) !== JSON.stringify(c.durations ?? {})
+      link.status !== p.status ||
+      link.ratio !== p.ratio ||
+      link.name !== p.name ||
+      !!link.noBar !== !!p.noBar ||
+      (link.pv ?? "") !== (p.pv ?? "") ||
+      JSON.stringify(link.conditions ?? {}) !== JSON.stringify(p.conditions ?? {}) ||
+      JSON.stringify(link.durations ?? {}) !== JSON.stringify(p.durations ?? {})
     );
   });
   if (stale.length === 0) return;
@@ -89,15 +93,7 @@ async function publishCreatureStatuses() {
       const link = item.metadata[CREATURE_KEY] as CreatureLink;
       const c = getCreature(link.id);
       if (!c) continue;
-      const s = statusOf(c);
-      item.metadata[CREATURE_KEY] = {
-        id: c.id,
-        name: c.name,
-        status: s.label,
-        ratio: s.ratio,
-        conditions: c.conditions ?? {},
-        durations: c.durations,
-      };
+      item.metadata[CREATURE_KEY] = publicLink(c);
     }
   });
 }
@@ -128,6 +124,7 @@ async function collectOverlays(): Promise<Overlay[]> {
         max: st.max,
         temp: st.temp,
         tags: condTags(st.conditions, st.durations),
+        bar: true,
       });
       continue;
     }
@@ -146,6 +143,7 @@ async function collectOverlays(): Promise<Overlay[]> {
         max: c.hpMax,
         temp: c.temp,
         tags: condTags(c.conditions, c.durations),
+        bar: true,
       });
     } else {
       // Jogadores (ou mestre sem os dados neste navegador): só o estado grosseiro.
@@ -153,11 +151,12 @@ async function collectOverlays(): Promise<Overlay[]> {
         tokenId: token.id,
         visible: token.visible,
         name: link.name,
-        line: link.status ?? "",
+        line: [link.status, link.pv ? `PV ${link.pv}` : ""].filter(Boolean).join(" · "),
         hp: Math.round((link.ratio ?? 1) * 100),
         max: 100,
         temp: 0,
         tags: condTags(link.conditions, link.durations),
+        bar: !link.noBar,
       });
     }
   }
@@ -188,6 +187,7 @@ async function sync() {
       b.width,
       b.height,
       o.visible,
+      o.bar,
     ].join("|");
     if (drawn.get(o.tokenId) === key) continue;
 
@@ -218,8 +218,12 @@ async function sync() {
         .build();
 
     const items: Item[] = [
-      rect(bgId, "PF2e PV (fundo)", b.min.x, b.width, "#10121c", 0.85),
-      rect(fillId, "PF2e PV", b.min.x, b.width * (o.hp / scale), colorFor(ratio)),
+      ...(o.bar
+        ? [
+            rect(bgId, "PF2e PV (fundo)", b.min.x, b.width, "#10121c", 0.85),
+            rect(fillId, "PF2e PV", b.min.x, b.width * (o.hp / scale), colorFor(ratio)),
+          ]
+        : []),
       buildText()
         .id(txtId)
         .name("PF2e PV (texto)")
@@ -242,7 +246,7 @@ async function sync() {
         .metadata({ [MARK]: true })
         .build(),
     ];
-    if (o.temp > 0) {
+    if (o.bar && o.temp > 0) {
       items.push(
         rect(tempId, "PF2e PV temporário", b.min.x + b.width * (o.hp / scale), b.width * (o.temp / scale), TEMP_COLOR),
       );

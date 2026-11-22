@@ -592,3 +592,36 @@ body,
 .tabs button.logtab {
   color: var(--gold);
 }
+
+/* ---------- engrenagem da criatura ---------- */
+.chead {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+button.gear {
+  margin-left: auto;
+  padding: 2px 8px;
+  min-height: 0;
+  font-size: 15px;
+  line-height: 1.2;
+  background: transparent;
+  color: var(--gold2);
+  border: 1px solid var(--line2);
+}
+.visibility {
+  margin: 6px 0;
+  padding: 8px 10px;
+  border: 1px dashed var(--line2);
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+}
+.visibility strong {
+  font-family: var(--serif);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold2);
+}
