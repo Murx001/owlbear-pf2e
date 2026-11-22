@@ -255,3 +255,6 @@ Na grade, uma **emanação de 10 pés** cobre **2 casas** em volta do conjurador
 1. Em **Agir > Ataques**, cada arma tem uma engrenagem **⚙**. Ela abre o editor de **modos de dano**: o primeiro é o da ficha; use **+ Novo modo** para criar outros (por exemplo "Duas mãos" 1d12+3, ou "Com Ikon" 1d12+5), com nome e fórmula (`1d12+5 slashing`). Marque o círculo do modo em uso.
 2. O botão **Dano** mostra a fórmula do modo em uso e rola esse dano. O **ataque aplica o dano do modo escolhido sozinho** ao acertar, inclusive o dobro no crítico. Fórmula inválida mostra um aviso e não é salva.
 3. **Perícias, atributos, salvaguardas e Percepção** agora **perguntam antes de rolar** (quando a rolagem automática não está ligada) e têm um **contador de bônus** (− e +, ou digite) para somar ou subtrair só naquela rolagem. O mesmo contador está na confirmação de ataque. O cartão mostra "(bônus +2)".
+
+### 32. Ícone da ferramenta de área
+O ícone roxo "Área PF2e" **não fica mais na barra de ferramentas**. Ele aparece só enquanto você posiciona uma área de magia (cone, explosão, linha) e some quando a área é posicionada, cancelada (Esc) ou resolvida. O posicionamento funciona igual: clique no mapa, fora do alcance fica vermelho, Esc cancela.

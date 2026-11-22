@@ -153,8 +153,59 @@ async function tokensIn(pl: Placement, casterTokenId?: string): Promise<string[]
   return out;
 }
 
+/**
+ * A ferramenta só existe enquanto uma área está sendo posicionada: assim não fica um ícone solto na
+ * barra de ferramentas do Owlbear o tempo todo.
+ */
+let toolReady = false;
+async function registerTool() {
+  if (toolReady) return;
+  try {
+    await OBR.tool.create({
+      id: TOOL,
+      icons: [{ icon: asset("area-icon.svg"), label: "Área PF2e" }],
+      defaultMode: MODE,
+    });
+    await OBR.tool.createMode({
+      id: MODE,
+      icons: [{ icon: asset("area-icon.svg"), label: "Posicionar área" }],
+      cursors: [{ cursor: "crosshair" }],
+      onToolMove: async (_ctx, e) => {
+        const a = armed;
+        if (!a) return;
+        const pointer = await aim(e.pointerPosition);
+        const pts = polygon(placementOf(a, pointer));
+        if (pts) await drawShape(pts, false, inRange(a, pointer));
+      },
+      onToolClick: async (_ctx, e) => {
+        await place(e.pointerPosition);
+        return false;
+      },
+      // Um clique com leve movimento vira "arrasto": também posiciona a área.
+      onToolDragEnd: async (_ctx, e) => {
+        await place(e.pointerPosition);
+      },
+      onKeyDown: (_ctx, e) => {
+        if (e.key === "Escape") void cancel();
+      },
+    });
+  } catch {
+    /* já registrada (recarga da página): segue com a existente */
+  }
+
+  toolReady = true;
+}
+
+async function dropTool() {
+  if (!toolReady) return;
+  toolReady = false;
+  await OBR.tool.removeMode(MODE).catch(() => undefined);
+  await OBR.tool.remove(TOOL).catch(() => undefined);
+}
+
 async function restoreTool(prev: string) {
   if (prev && prev !== TOOL) await OBR.tool.activateTool(prev).catch(() => undefined);
+  await dropTool();
 }
 
 async function finish(pointer: Pt) {
@@ -235,6 +286,7 @@ async function arm(msg: AreaArmMsg) {
       free,
       rangeFeet: msg.rangeFeet,
     };
+    await registerTool();
     await OBR.tool.activateTool(TOOL);
     await OBR.tool.activateMode(TOOL, MODE).catch(() => undefined);
   } catch (e) {
@@ -272,39 +324,6 @@ async function place(raw: Pt) {
 export async function initAreaTool() {
   OBR.broadcast.onMessage(AREA_SHARE, (e) => void showShared((e.data as AreaShareMsg).pts));
   OBR.broadcast.onMessage(AREA_UNSHARE, () => hideSharedLater());
-  try {
-    await OBR.tool.create({
-      id: TOOL,
-      icons: [{ icon: asset("area-icon.svg"), label: "Área PF2e" }],
-      defaultMode: MODE,
-    });
-    await OBR.tool.createMode({
-      id: MODE,
-      icons: [{ icon: asset("area-icon.svg"), label: "Posicionar área" }],
-      cursors: [{ cursor: "crosshair" }],
-      onToolMove: async (_ctx, e) => {
-        const a = armed;
-        if (!a) return;
-        const pointer = await aim(e.pointerPosition);
-        const pts = polygon(placementOf(a, pointer));
-        if (pts) await drawShape(pts, false, inRange(a, pointer));
-      },
-      onToolClick: async (_ctx, e) => {
-        await place(e.pointerPosition);
-        return false;
-      },
-      // Um clique com leve movimento vira "arrasto": também posiciona a área.
-      onToolDragEnd: async (_ctx, e) => {
-        await place(e.pointerPosition);
-      },
-      onKeyDown: (_ctx, e) => {
-        if (e.key === "Escape") void cancel();
-      },
-    });
-  } catch {
-    /* já registrada (recarga da página): segue com a existente */
-  }
-
   OBR.broadcast.onMessage(AREA_ARM, (event) => void arm(event.data as AreaArmMsg));
   OBR.broadcast.onMessage(AREA_CLEAR, async () => {
     const a = armed;
