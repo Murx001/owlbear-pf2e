@@ -1974,6 +1974,9 @@ let isGmRole = false;
 let pinned = false;
 
 OBR.onReady(async () => {
+  // Painel da esquerda um pouco maior (o manifesto traz o mesmo tamanho para quem ainda não recarregou).
+  void Promise.resolve(OBR.action?.setWidth?.(460)).catch(() => undefined);
+  void Promise.resolve(OBR.action?.setHeight?.(700)).catch(() => undefined);
   listenAttackAcks();
   refreshDice();
   // O botão Conjurar do cartão da magia manda conjurar aqui (é este painel que tem a ficha).
