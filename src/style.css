@@ -1015,3 +1015,24 @@ input.init-val {
   border-color: #a99bff;
   font-weight: 700;
 }
+
+/* linha de Dano/Cura/Temp. da criatura: compacta e quebra em vez de estourar a largura */
+.hp-row {
+  gap: 6px;
+  align-items: center;
+}
+.hp-row input {
+  width: 64px;
+  flex: none;
+  min-height: 32px;
+  height: 32px;
+  padding: 2px 8px;
+  font-size: 14px;
+}
+.hp-row button {
+  min-height: 32px;
+  height: 32px;
+  padding: 2px 10px;
+  font-size: 13px;
+  flex: none;
+}

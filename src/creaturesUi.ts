@@ -1085,7 +1085,7 @@ export function initCreatures(
     amount.min = "0";
     amount.placeholder = "valor";
     const read = () => Math.max(0, parseInt(amount.value, 10) || 0);
-    const hpRow = el("div", "import");
+    const hpRow = el("div", "import wrap hp-row");
     hpRow.append(
       amount,
       button("Dano", () => {
