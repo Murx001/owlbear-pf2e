@@ -49,7 +49,14 @@ import {
   resetCreatureMap,
 } from "./creatureAttack";
 import { parseDamage } from "./damage";
-import { abilityLabel, useAbility } from "./creatureAbility";
+import {
+  abilityJobFor,
+  abilityLabel,
+  beginAbility,
+  cancelAbility,
+  removeAbilityTarget,
+  resolveAbilityJob,
+} from "./creatureAbility";
 import { publishRoll, rollDie, signed } from "./roll";
 import {
   CREATURE_KEY,
@@ -658,16 +665,48 @@ export function initCreatures(root: HTMLElement, onRender?: () => void, part: Cr
       const use = el("button", undefined, `Usar: ${a.name}`);
       use.type = "button";
       use.title = abilityLabel(a);
-      use.addEventListener("click", () => void useAbility(c, a, (t) => say(t)));
+      use.addEventListener("click", () => void beginAbility(c, a, a.area ? "area" : "manual", (t) => say(t), () => render()));
       const info = el("span", "sub", abilityLabel(a));
       info.style.flex = "1";
-      row.append(use, info, button("×", () => {
+      row.append(use);
+      if (a.area) {
+        const manual = el("button", undefined, "Alvos à mão");
+        manual.type = "button";
+        manual.title = "Escolher os alvos selecionando os tokens, sem usar a área";
+        manual.addEventListener("click", () => void beginAbility(c, a, "manual", (t) => say(t), () => render()));
+        row.append(manual);
+      }
+      row.append(info, button("×", () => {
         upsertCreature({ ...c, abilities: list.filter((_, k) => k !== i) });
         render();
       }, "mini"));
       box.append(row);
     });
-    box.append(el("p", "sub", "Com área: toque em Usar e posicione a área no mapa (os tokens dentro são os alvos). Sem área: selecione os alvos (Shift para vários) e toque em Usar."));
+    box.append(
+      el(
+        "p",
+        "sub",
+        "Com área: Usar posiciona a área no mapa e os tokens dentro viram alvos; Alvos à mão escolhe selecionando os tokens. Em qualquer caso você ajusta a lista e toca em Resolver.",
+      ),
+    );
+    const live = abilityJobFor(c.id);
+    if (live) {
+      const panel = el("div", "visibility");
+      panel.append(el("strong", undefined, `${live.ability.name}: alvos (${live.targets.length})`));
+      const chips = el("div", "chips");
+      for (const t of live.targets) {
+        const chip = el("span", "chip");
+        chip.append(el("span", undefined, t.name), button("×", () => removeAbilityTarget(t.tokenId), "mini"));
+        chips.append(chip);
+      }
+      if (live.targets.length === 0) chips.append(el("span", "sub", "Nenhum ainda. Selecione os tokens no mapa."));
+      const act = el("div", "import");
+      const go = button(`Resolver (${live.targets.length})`, () => void resolveAbilityJob());
+      go.disabled = live.targets.length === 0;
+      act.append(go, button("Cancelar", () => cancelAbility()));
+      panel.append(chips, el("p", "sub", "Selecionar um token novo o adiciona; selecionar um da lista o tira."), act);
+      box.append(panel);
+    }
 
     const open = abilityFormOpen.has(c.id);
     box.append(

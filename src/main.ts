@@ -6,6 +6,7 @@ import type { Attack, Character, Stat } from "./character";
 import { parseDamage } from "./damage";
 import { creatureAc, getCreature } from "./creatures";
 import { creatureAttackSelection } from "./creatureAttack";
+import { abilitySelection } from "./creatureAbility";
 import {
   COND_BY_KEY,
   CONDITIONS,
@@ -1832,6 +1833,7 @@ OBR.onReady(async () => {
 
     // Mestre: um ataque de criatura espera o token do alvo; essa seleção não abre fichas.
     if (await creatureAttackSelection(player.selection ?? [])) return;
+    if (await abilitySelection(player.selection ?? [])) return;
 
     // Esperando o alvo de um ataque: o próximo token selecionado é o alvo.
     if (pending) {

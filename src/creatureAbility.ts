@@ -62,10 +62,15 @@ export const abilityLabel = (a: CreatureAbility) => {
   return parts.join(" · ");
 };
 
+/** A área desenhada some depois de alguns segundos (todos acompanham o resultado). */
+const AREA_SHOWN_MS = 8000;
+const clearArea = () => void OBR.broadcast.sendMessage(AREA_CLEAR, {}, { destination: "LOCAL" });
+const clearAreaLater = (ms = AREA_SHOWN_MS) => void setTimeout(clearArea, ms);
+
 /**
  * Habilidade com área: abre a ferramenta de área no mapa (igual às magias dos jogadores). O mestre
  * posiciona a área (cone e linha saem do token da criatura; a emanação já sai dela) e voltam os
- * tokens que ficaram dentro. `null` se cancelou ou deu erro.
+ * tokens que ficaram dentro. `null` se cancelou ou deu erro. A área continua desenhada até o fim.
  */
 async function pickArea(c: Creature, a: CreatureAbility, say: (t: string) => void): Promise<string[] | null> {
   const area = a.area!;
@@ -94,7 +99,6 @@ async function pickArea(c: Creature, a: CreatureAbility, say: (t: string) => voi
       }
       clearTimeout(timer);
       off?.();
-      void OBR.broadcast.sendMessage(AREA_CLEAR, {}, { destination: "LOCAL" });
       resolve(r.cancelled ? null : r.tokenIds);
     });
     const msg: AreaArmMsg = { area, casterTokenId: c.tokenId };
@@ -102,24 +106,8 @@ async function pickArea(c: Creature, a: CreatureAbility, say: (t: string) => voi
   });
 }
 
-/** Usa a habilidade contra os tokens que o mestre selecionou (ou, com área, que ficaram dentro dela). */
-export async function useAbility(c: Creature, a: CreatureAbility, say: (t: string) => void): Promise<void> {
-  let picked: string[];
-  if (a.area) {
-    const inside = await pickArea(c, a, say);
-    if (!inside) return;
-    picked = inside.filter((id) => id !== c.tokenId);
-    if (picked.length === 0) {
-      say(`${a.name}: nenhum token com ficha ou criatura vinculada ficou dentro da área.`);
-      return;
-    }
-  } else {
-    picked = ((await OBR.player.getSelection()) ?? []).filter((id) => id !== c.tokenId);
-    if (picked.length === 0) {
-      say(`${a.name}: selecione no mapa os tokens que sofrem a habilidade (vários, com Shift) e toque de novo.`);
-      return;
-    }
-  }
+/** Rola e aplica a habilidade nos tokens dados e mostra o cartão para todos. */
+async function runAbility(c: Creature, a: CreatureAbility, picked: string[], say: (t: string) => void): Promise<void> {
   const casterName = publicLink(c).name;
   const spell = abilityToSpell(a);
   const cast: SpellCast = {
@@ -178,4 +166,145 @@ export async function useAbility(c: Creature, a: CreatureAbility, say: (t: strin
       .map((r) => describeSpellResult(cast, r) || `${r.target}: ${r.save ? DEGREE_TEXT[r.save.degree] : ""}`)
       .join(" "),
   );
+}
+
+/** Uso direto (sem lista para ajustar): área no mapa, ou os tokens já selecionados. */
+export async function useAbility(c: Creature, a: CreatureAbility, say: (t: string) => void): Promise<void> {
+  let picked: string[];
+  if (a.area) {
+    const inside = await pickArea(c, a, say);
+    if (!inside) {
+      clearArea();
+      return;
+    }
+    picked = inside.filter((id) => id !== c.tokenId);
+    if (picked.length === 0) {
+      clearAreaLater();
+      say(`${a.name}: nenhum token com ficha ou criatura vinculada ficou dentro da área.`);
+      return;
+    }
+  } else {
+    picked = ((await OBR.player.getSelection()) ?? []).filter((id) => id !== c.tokenId);
+    if (picked.length === 0) {
+      say(`${a.name}: selecione no mapa os tokens que sofrem a habilidade (vários, com Shift) e toque de novo.`);
+      return;
+    }
+  }
+  await runAbility(c, a, picked, say);
+  if (a.area) clearAreaLater();
+}
+
+/* ---------- uso com lista de alvos que o mestre ajusta ---------- */
+export interface AbilityTarget {
+  tokenId: string;
+  name: string;
+}
+
+interface Job {
+  creatureId: string;
+  ability: CreatureAbility;
+  targets: AbilityTarget[];
+  say: (t: string) => void;
+  refresh: () => void;
+}
+
+let job: Job | null = null;
+
+export const abilityJobFor = (creatureId: string): Job | null => (job && job.creatureId === creatureId ? job : null);
+
+async function labelOf(tokenId: string): Promise<string | null> {
+  const tc = await creatureOfToken(tokenId);
+  if (tc) return tc.name;
+  const pc = await linkOfToken(tokenId);
+  return pc?.pathbuilderId ? pc.name : null;
+}
+
+async function addTargets(j: Job, ids: string[]) {
+  for (const id of ids) {
+    if (j.targets.some((t) => t.tokenId === id)) continue;
+    const name = await labelOf(id);
+    if (name) j.targets.push({ tokenId: id, name });
+  }
+}
+
+/**
+ * Começa o uso de uma habilidade. `area`: posiciona a área no mapa e os tokens de dentro entram na
+ * lista. `manual`: o mestre monta a lista selecionando os tokens. Nos dois casos ele ajusta a lista
+ * (selecionar um token novo o adiciona; selecionar um da lista o tira) e toca em Resolver.
+ */
+export async function beginAbility(
+  c: Creature,
+  a: CreatureAbility,
+  mode: "area" | "manual",
+  say: (t: string) => void,
+  refresh: () => void,
+): Promise<void> {
+  cancelAbility();
+  const mine: Job = { creatureId: c.id, ability: a, targets: [], say, refresh };
+  job = mine;
+  refresh();
+  if (mode === "area" && a.area) {
+    const ids = await pickArea(c, a, say);
+    if (job !== mine) return; // cancelado enquanto posicionava
+    if (!ids) {
+      job = null;
+      clearArea();
+      refresh();
+      return;
+    }
+    await addTargets(mine, ids.filter((id) => id !== c.tokenId));
+    say(
+      mine.targets.length > 0
+        ? `${a.name}: ${mine.targets.length} alvo(s) na área. Ajuste selecionando tokens e toque em Resolver.`
+        : `${a.name}: nenhum token vinculado dentro da área. Selecione os alvos à mão ou cancele.`,
+    );
+  } else {
+    say(`${a.name}: selecione no mapa os tokens que sofrem a habilidade (vários, com Shift) e toque em Resolver.`);
+  }
+  mine.refresh();
+}
+
+/** Seleção do mestre enquanto monta a lista: novo token entra, token da lista sai. */
+export async function abilitySelection(ids: string[]): Promise<boolean> {
+  const j = job;
+  if (!j) return false;
+  const c = getCreature(j.creatureId);
+  if (!c) {
+    job = null;
+    return false;
+  }
+  const others = ids.filter((id) => id !== c.tokenId);
+  if (others.length === 0) return true;
+  if (others.length === 1 && j.targets.some((t) => t.tokenId === others[0])) {
+    j.targets = j.targets.filter((t) => t.tokenId !== others[0]);
+  } else {
+    await addTargets(j, others);
+  }
+  j.refresh();
+  return true;
+}
+
+export function removeAbilityTarget(tokenId: string) {
+  if (!job) return;
+  job.targets = job.targets.filter((t) => t.tokenId !== tokenId);
+  job.refresh();
+}
+
+export function cancelAbility() {
+  if (!job) return;
+  const j = job;
+  job = null;
+  clearArea();
+  j.refresh();
+}
+
+export async function resolveAbilityJob(): Promise<void> {
+  const j = job;
+  if (!j) return;
+  const c = getCreature(j.creatureId);
+  job = null;
+  if (!c) return;
+  await runAbility(c, j.ability, j.targets.map((t) => t.tokenId), j.say);
+  if (j.ability.area) clearAreaLater();
+  j.refresh();
 }
