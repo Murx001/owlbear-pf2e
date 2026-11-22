@@ -667,7 +667,7 @@ export function initCreatures(root: HTMLElement, onRender?: () => void, part: Cr
       }, "mini"));
       box.append(row);
     });
-    box.append(el("p", "sub", "Selecione no mapa os alvos (Shift para vários) e toque em Usar."));
+    box.append(el("p", "sub", "Com área: toque em Usar e posicione a área no mapa (os tokens dentro são os alvos). Sem área: selecione os alvos (Shift para vários) e toque em Usar."));
 
     const open = abilityFormOpen.has(c.id);
     box.append(

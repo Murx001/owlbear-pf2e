@@ -290,7 +290,7 @@ Ao acabar a condição (tempo contado na aba Combate, ou removida à mão), a **
 1. Criaturas importadas do Foundry trazem suas **habilidades com salvaguarda** já cadastradas (ex.: Breath Weapon: Reflexos CD 30 básica, 12d6 ácido, linha de 80 pés; Frightful Presence: Vontade CD 28, emanação de 90 pés, Amedrontado). Em **Em jogo**, o bloco **Habilidades (automáticas)** lista cada uma com um botão **Usar**.
 2. **Selecione no mapa os alvos** (Shift para vários) e toque em **Usar**: o sistema rola a salvaguarda de cada alvo contra a CD, rola o dano **uma vez** para todos, aplica ×0/×½/×1/×2 (básica) e as **condições** na falha. O cartão aparece para todos; a CA e os PV de criaturas continuam secretos.
 3. **+ Nova habilidade** cadastra à mão: nome, salvaguarda, CD, básica ou não, dano (`12d6 acid`), área (cone, linha, explosão, emanação), condição na falha com valor e duração. O **×** remove.
-4. A área é informativa: o mestre escolhe os alvos selecionando os tokens (a ferramenta de área ainda não é usada nas habilidades).
+4. **Habilidades com área** (cone, linha, explosão, emanação): ao tocar em Usar, a **área aparece no mapa**, como nas magias dos jogadores. Posicione com um clique (cone e linha saem do token da criatura; a emanação já sai dela; Esc cancela) e os **tokens dentro** viram os alvos, **sem precisar selecionar**. Os outros jogadores também veem a área. Sem área: selecione os alvos (Shift para vários).
 
 ### 39. Rolagem automática removida e botão Histórico
 1. Não existe mais a opção de rolagem automática (nem para o mestre, nem para o jogador): tudo pergunta antes de rolar.

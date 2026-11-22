@@ -1,5 +1,6 @@
 import OBR from "@owlbear-rodeo/sdk";
 import { CARD_SHARE, type CardData } from "./cardData";
+import { AREA_ARM, AREA_CLEAR, AREA_RESULT, KIND_PT, type AreaArmMsg, type AreaResultMsg } from "./area";
 import { showCard } from "./cardView";
 import { type Creature, type CreatureAbility, getCreature, publicLink } from "./creatures";
 import { creatureSaveTarget } from "./gmResolver";
@@ -61,12 +62,63 @@ export const abilityLabel = (a: CreatureAbility) => {
   return parts.join(" · ");
 };
 
-/** Usa a habilidade contra os tokens que o mestre selecionou (um ou vários). */
+/**
+ * Habilidade com área: abre a ferramenta de área no mapa (igual às magias dos jogadores). O mestre
+ * posiciona a área (cone e linha saem do token da criatura; a emanação já sai dela) e voltam os
+ * tokens que ficaram dentro. `null` se cancelou ou deu erro.
+ */
+async function pickArea(c: Creature, a: CreatureAbility, say: (t: string) => void): Promise<string[] | null> {
+  const area = a.area!;
+  if (area.kind !== "burst" && !c.tokenId) {
+    say(`${a.name}: a criatura precisa estar ligada a um token para sair dela (${KIND_PT[area.kind]}).`);
+    return null;
+  }
+  say(
+    area.kind === "emanation"
+      ? `${a.name}: emanação de ${area.feet} pés ao redor da criatura.`
+      : `${a.name}: ${KIND_PT[area.kind]} de ${area.feet} pés. Posicione no mapa (Esc cancela).`,
+  );
+  return new Promise((resolve) => {
+    let off: (() => void) | undefined;
+    const timer = setTimeout(() => {
+      off?.();
+      say(`${a.name}: a área não foi posicionada a tempo.`);
+      resolve(null);
+    }, 5 * 60 * 1000);
+    off = OBR.broadcast.onMessage(AREA_RESULT, (event) => {
+      const r = event.data as AreaResultMsg;
+      // Erros que não encerram (ex.: fora do alcance) só avisam; o mestre tenta de novo.
+      if (r.error && !r.cancelled) {
+        say(r.error);
+        if (!r.tokenIds || r.tokenIds.length === 0) return;
+      }
+      clearTimeout(timer);
+      off?.();
+      void OBR.broadcast.sendMessage(AREA_CLEAR, {}, { destination: "LOCAL" });
+      resolve(r.cancelled ? null : r.tokenIds);
+    });
+    const msg: AreaArmMsg = { area, casterTokenId: c.tokenId };
+    void OBR.broadcast.sendMessage(AREA_ARM, msg, { destination: "LOCAL" });
+  });
+}
+
+/** Usa a habilidade contra os tokens que o mestre selecionou (ou, com área, que ficaram dentro dela). */
 export async function useAbility(c: Creature, a: CreatureAbility, say: (t: string) => void): Promise<void> {
-  const picked = ((await OBR.player.getSelection()) ?? []).filter((id) => id !== c.tokenId);
-  if (picked.length === 0) {
-    say(`${a.name}: selecione no mapa os tokens que sofrem a habilidade (vários, com Shift) e toque de novo.`);
-    return;
+  let picked: string[];
+  if (a.area) {
+    const inside = await pickArea(c, a, say);
+    if (!inside) return;
+    picked = inside.filter((id) => id !== c.tokenId);
+    if (picked.length === 0) {
+      say(`${a.name}: nenhum token com ficha ou criatura vinculada ficou dentro da área.`);
+      return;
+    }
+  } else {
+    picked = ((await OBR.player.getSelection()) ?? []).filter((id) => id !== c.tokenId);
+    if (picked.length === 0) {
+      say(`${a.name}: selecione no mapa os tokens que sofrem a habilidade (vários, com Shift) e toque de novo.`);
+      return;
+    }
   }
   const casterName = publicLink(c).name;
   const spell = abilityToSpell(a);
