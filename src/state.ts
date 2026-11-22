@@ -19,6 +19,8 @@ export interface CharState {
   conditions: Conditions;
   /** Ajustes manuais do jogador: corrigem dados errados ou efeitos que o sistema não detecta. */
   adj?: { ac?: number; hp?: number };
+  /** Modos de dano personalizados por arma (ex.: duas mãos 1d12+3). `active` é o modo em uso. */
+  dmg?: Record<string, { modes: { label: string; formula: string }[]; active: number }>;
   /** Quanto tempo falta para cada condição acabar (só as que têm duração contada). */
   durations?: Durations;
 }

@@ -250,3 +250,8 @@ Na grade, uma **emanação de 10 pés** cobre **2 casas** em volta do conjurador
 ### 30. Flanqueio na rolagem automática e criaturas sem dados
 1. Com a **rolagem automática** ligada (liberada pelo mestre e escolhida pelo jogador), a aba Agir mostra a caixa **"Alvo flanqueado no próximo ataque"**. Marcada, o próximo ataque trata o alvo como Desprevenido (−2 na CA) e a caixa desmarca sozinha. O **Bônus extra** também vale nesse modo. Com a pergunta ligada (padrão), o flanqueio continua no cartão de confirmação.
 2. Na aba **Mestre**, em **Em jogo**, aparece um aviso vermelho quando há tokens ligados a criaturas que **não existem neste navegador** (causa do erro "sem dados cadastrados"). O botão **Desvincular esses tokens** limpa o vínculo para vincular de novo a partir do bestiário.
+
+### 31. Dano personalizado por arma e contador de bônus antes de rolar
+1. Em **Agir > Ataques**, cada arma tem uma engrenagem **⚙**. Ela abre o editor de **modos de dano**: o primeiro é o da ficha; use **+ Novo modo** para criar outros (por exemplo "Duas mãos" 1d12+3, ou "Com Ikon" 1d12+5), com nome e fórmula (`1d12+5 slashing`). Marque o círculo do modo em uso.
+2. O botão **Dano** mostra a fórmula do modo em uso e rola esse dano. O **ataque aplica o dano do modo escolhido sozinho** ao acertar, inclusive o dobro no crítico. Fórmula inválida mostra um aviso e não é salva.
+3. **Perícias, atributos, salvaguardas e Percepção** agora **perguntam antes de rolar** (quando a rolagem automática não está ligada) e têm um **contador de bônus** (− e +, ou digite) para somar ou subtrair só naquela rolagem. O mesmo contador está na confirmação de ataque. O cartão mostra "(bônus +2)".

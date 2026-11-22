@@ -2,7 +2,7 @@ import OBR from "@owlbear-rodeo/sdk";
 import "./tokens.css";
 import "./style.css";
 import "./theme.css";
-import type { Character, Stat } from "./character";
+import type { Attack, Character, Stat } from "./character";
 import {
   COND_BY_KEY,
   CONDITIONS,
@@ -269,13 +269,19 @@ function rollButton(
   b.addEventListener("click", () => {
     const x = extraBonus();
     resetExtra();
-    if (custom) custom(value + x);
-    else {
-      const t = x ? `${title} (bônus extra ${signed(x)})` : title;
-      void publishRoll({ title: t, count: 1, sides: 20, mod: value + x, dc: target() }).then((msg) =>
-        showCard({ kind: "check", msg }),
-      );
+    if (custom) {
+      custom(value + x);
+      return;
     }
+    void (async () => {
+      // Antes de rolar, pergunta e deixa somar ou subtrair um bônus só desta rolagem.
+      const ask = await confirmRoll(title, [`Modificador: ${signed(value + x)}${target() !== undefined ? ` · CD ${target()}` : ""}`]);
+      if (!ask.ok) return;
+      const total = x + ask.bonus;
+      const t = total ? `${title} (bônus ${signed(total)})` : title;
+      const msg = await publishRoll({ title: t, count: 1, sides: 20, mod: value + total, dc: target() });
+      void showCard({ kind: "check", msg });
+    })();
   });
   return b;
 }
@@ -377,13 +383,13 @@ function confirmRoll(
   lines: string[],
   /** Em ataques: nome do alvo, para oferecer a opção "alvo flanqueado". */
   flankTarget?: string,
-): Promise<{ ok: boolean; flanked: boolean }> {
+): Promise<{ ok: boolean; flanked: boolean; bonus: number }> {
   if (!mustAsk()) {
     // Rolagem automática: não há cartão de pergunta, então o flanqueio vem da caixa marcada em Agir.
     const flanked = flankTarget !== undefined && autoFlank;
     autoFlank = false;
     if (current) renderSheet(current);
-    return Promise.resolve({ ok: true, flanked });
+    return Promise.resolve({ ok: true, flanked, bonus: 0 });
   }
   return new Promise((resolve) => {
     targetingEl.hidden = true; // uma coisa de cada vez na barra de ação
@@ -392,6 +398,19 @@ function confirmRoll(
     text.style.flex = "1 1 100%";
     text.append(el("strong", undefined, `${title}: deseja rolar os dados?`));
     for (const l of lines) text.append(el("div", "sub", l));
+
+    // Contador: soma ou subtrai um bônus só nesta rolagem (o mestre deu +1, terreno difícil…).
+    const stepRow = el("div", "import");
+    const stepLabel = el("span", "sub", "Bônus nesta rolagem");
+    const stepInput = el("input");
+    stepInput.type = "number";
+    stepInput.value = "0";
+    stepInput.style.width = "64px";
+    const step = (d: number) => {
+      stepInput.value = String((parseInt(stepInput.value, 10) || 0) + d);
+    };
+    stepRow.append(stepLabel, button("−", () => step(-1), "mini"), stepInput, button("+", () => step(1), "mini"));
+    text.append(stepRow);
 
     // Flanqueio: o alvo fica Desprevenido (−2 na CA) contra este ataque.
     let box: HTMLInputElement | undefined;
@@ -409,7 +428,7 @@ function confirmRoll(
       confirmEl.hidden = true;
       confirmEl.replaceChildren();
       updateBanner(); // volta a faixa de alvo, se ainda houver
-      resolve({ ok: v, flanked: v && !!box?.checked });
+      resolve({ ok: v, flanked: v && !!box?.checked, bonus: v ? parseInt(stepInput.value, 10) || 0 : 0 });
     };
     const roll = el("button", undefined, "Rolar dados");
     roll.type = "button";
@@ -730,7 +749,7 @@ async function onTargetPicked(tokenId: string) {
     attackerName: current.name,
     attackerColor: await OBR.player.getColor(),
     title: p.title,
-    bonus: p.bonus,
+    bonus: p.bonus + answer.bonus,
     mapPenalty: penalty,
     damage: p.damage,
     flanking: answer.flanked,
@@ -785,6 +804,108 @@ function attackButton(
   return rollButton(label, base, title, undefined, opts, (bonus) => {
     void beginAttack(title, bonus, damage);
   });
+}
+
+/* ---------- dano personalizado por arma ---------- */
+/** "1d12+5 slashing" -> dados, bônus e tipo. Devolve null se não entender. */
+function parseDamage(text: string): Attack["damage"] | null {
+  const m = /^\s*(\d+)\s*d\s*(\d+)\s*(?:([+-])\s*(\d+))?\s*(.*)$/i.exec(text);
+  if (!m) return null;
+  const dice = parseInt(m[1], 10);
+  const die = parseInt(m[2], 10);
+  if (dice < 1 || dice > 20 || die < 2 || die > 100) return null;
+  return { dice, die, bonus: (m[3] === "-" ? -1 : 1) * (parseInt(m[4] ?? "0", 10) || 0), type: m[5].trim() };
+}
+
+const sheetDamageText = (a: Attack) =>
+  `${formulaText(a.damage.dice, a.damage.die, a.damage.bonus)}${a.damage.type ? ` ${a.damage.type}` : ""}`;
+
+/** Modos da arma: o primeiro é sempre o da ficha; os outros são do jogador. */
+function damageModes(a: Attack): { label: string; formula: string }[] {
+  const extra = state.dmg?.[a.name]?.modes ?? [];
+  return [{ label: "Ficha", formula: sheetDamageText(a) }, ...extra];
+}
+
+/** Dano em uso nesta arma (o modo escolhido, ou o da ficha). */
+function activeDamage(a: Attack): { spec: Attack["damage"]; label: string } {
+  const idx = state.dmg?.[a.name]?.active ?? 0;
+  const mode = damageModes(a)[idx];
+  const parsed = mode ? parseDamage(mode.formula) : null;
+  return parsed && idx > 0 ? { spec: parsed, label: mode.label } : { spec: a.damage, label: "" };
+}
+
+const dmgOpen = new Set<string>();
+
+function button(text: string, onClick: () => void, cls?: string): HTMLButtonElement {
+  const b = el("button", cls, text);
+  b.type = "button";
+  b.addEventListener("click", onClick);
+  return b;
+}
+
+/** Editor: o jogador cria modos de dano (duas mãos, com a runa…) e escolhe qual usar. */
+function damageEditor(c: Character, a: Attack): HTMLElement {
+  const box = el("div", "visibility");
+  const cfg = state.dmg?.[a.name] ?? { modes: [], active: 0 };
+  const save = (next: { modes: { label: string; formula: string }[]; active: number }) => {
+    const dmg = { ...(state.dmg ?? {}) };
+    if (next.modes.length === 0) delete dmg[a.name];
+    else dmg[a.name] = next;
+    state.dmg = Object.keys(dmg).length > 0 ? dmg : undefined;
+    commit(c);
+  };
+  box.append(el("strong", undefined, `Dano de ${a.name}`));
+  box.append(
+    el("p", "sub", "Escolha o modo em uso. O ataque aplica o dano dele sozinho ao acertar. Fórmula: 1d12+5 slashing."),
+  );
+  damageModes(a).forEach((m, i) => {
+    const row = el("div", "import");
+    const pick = el("input");
+    pick.type = "radio";
+    pick.name = `dmg-${a.name}`;
+    pick.checked = (cfg.active ?? 0) === i;
+    pick.addEventListener("change", () => save({ ...cfg, active: i }));
+    const label = el("input");
+    label.value = m.label;
+    label.placeholder = "Nome";
+    label.style.width = "90px";
+    const formula = el("input");
+    formula.value = m.formula;
+    formula.placeholder = "1d12+5";
+    formula.style.flex = "1";
+    if (i === 0) {
+      label.disabled = true;
+      formula.disabled = true;
+    } else {
+      const edit = () => {
+        if (!parseDamage(formula.value)) {
+          say("Fórmula de dano não entendida. Use algo como 1d12+5 slashing.", true);
+          return;
+        }
+        const modes = cfg.modes.map((x, k) => (k === i - 1 ? { label: label.value.trim() || "Modo", formula: formula.value.trim() } : x));
+        save({ ...cfg, modes });
+      };
+      label.addEventListener("change", edit);
+      formula.addEventListener("change", edit);
+    }
+    row.append(pick, label, formula);
+    if (i > 0) {
+      row.append(
+        button("×", () => {
+          const modes = cfg.modes.filter((_, k) => k !== i - 1);
+          const active = (cfg.active ?? 0) === i ? 0 : (cfg.active ?? 0) > i ? (cfg.active ?? 0) - 1 : (cfg.active ?? 0);
+          save({ modes, active });
+        }, "mini"),
+      );
+    }
+    box.append(row);
+  });
+  box.append(
+    button("+ Novo modo", () => {
+      save({ ...cfg, modes: [...cfg.modes, { label: "Novo modo", formula: sheetDamageText(a) }], active: cfg.active ?? 0 });
+    }),
+  );
+  return box;
 }
 
 function mapRow(): HTMLElement {
@@ -1266,19 +1387,36 @@ function renderSheet(c: Character) {
     const rows = c.attacks.map((a) => {
       const row = el("div", "attack");
       row.append(el("span", "aname", a.name));
-      const atk = attackButton("Ataque", a.bonus, a.name, { isAttack: true }, a.damage);
-      const d = a.damage;
+      const now = activeDamage(a);
+      const atk = attackButton("Ataque", a.bonus, a.name, { isAttack: true }, now.spec);
+      const d = now.spec;
       const dmg = el("button", "stat");
       dmg.type = "button";
       dmg.append(
-        el("span", "lbl", "Dano"),
+        el("span", "lbl", now.label || "Dano"),
         el("span", "n", formulaText(d.dice, d.die, d.bonus)),
       );
+      dmg.title = "Rola o dano do modo em uso (toque na engrenagem para mudar)";
       dmg.addEventListener("click", () => {
-        void publishRoll({ title: `${a.name} (dano)`, count: d.dice, sides: d.die, mod: d.bonus });
+        void publishRoll({
+          title: `${a.name} (dano${now.label ? ` · ${now.label}` : ""})`,
+          count: d.dice,
+          sides: d.die,
+          mod: d.bonus,
+        });
       });
-      row.append(atk, dmg);
-      return row;
+      const gear = el("button", "gear", "⚙");
+      gear.type = "button";
+      gear.title = "Personalizar o dano desta arma";
+      gear.addEventListener("click", () => {
+        dmgOpen.has(a.name) ? dmgOpen.delete(a.name) : dmgOpen.add(a.name);
+        if (current) renderSheet(current);
+      });
+      row.append(atk, dmg, gear);
+      const wrap = el("div");
+      wrap.append(row);
+      if (dmgOpen.has(a.name)) wrap.append(damageEditor(c, a));
+      return wrap;
     });
     agirEl.append(section("Ataques", mapRow(), ...rows));
   }

@@ -625,3 +625,12 @@ button.gear {
   text-transform: uppercase;
   color: var(--gold2);
 }
+
+/* engrenagem do dano na linha da arma */
+.attack {
+  grid-template-columns: 1fr auto auto auto;
+}
+.attack button.gear {
+  margin-left: 0;
+  align-self: stretch;
+}
