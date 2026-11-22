@@ -34,6 +34,12 @@ export interface Placement {
 /** Mensagens locais entre o popover e a página de fundo (que cuida da ferramenta no mapa). */
 export const AREA_ARM = "pf2e.dice/area-arm";
 export const AREA_CLEAR = "pf2e.dice/area-clear";
+/** A área posicionada aparece para todos na sala (só a área final; a prévia é de quem posiciona). */
+export const AREA_SHARE = "pf2e.dice/area-share";
+export const AREA_UNSHARE = "pf2e.dice/area-unshare";
+export interface AreaShareMsg {
+  pts: { x: number; y: number }[];
+}
 export const AREA_RESULT = "pf2e.dice/area-result";
 
 export interface AreaArmMsg {

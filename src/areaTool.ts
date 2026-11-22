@@ -3,6 +3,9 @@ import { asset } from "./assets";
 import {
   AREA_ARM,
   AREA_CLEAR,
+  AREA_SHARE,
+  AREA_UNSHARE,
+  type AreaShareMsg,
   AREA_RESULT,
   distanceFeet,
   hits,
@@ -60,8 +63,43 @@ let drawing = false;
 let drawn = false;
 
 async function clearShape() {
+  const was = drawn;
   drawn = false;
   await OBR.scene.local.deleteItems([SHAPE_ID]).catch(() => undefined);
+  // Os outros ainda veem a área por alguns segundos (para acompanhar o resultado) e ela some.
+  if (was) await OBR.broadcast.sendMessage(AREA_UNSHARE, {}, { destination: "REMOTE" }).catch(() => undefined);
+}
+
+/* ---- área de quem conjurou, desenhada para os outros ---- */
+const SHARED_ID = "com.owlbear-pf2e/area-shared";
+let sharedTimer: number | undefined;
+
+function pathFor(id: string, pts: Pt[], color: string, final: boolean) {
+  const cmds: PathCommand[] = pts.map((p, i) => (i === 0 ? [Command.MOVE, p.x, p.y] : [Command.LINE, p.x, p.y]));
+  cmds.push([Command.CLOSE]);
+  return buildPath()
+    .id(id)
+    .name("Área PF2e")
+    .commands(cmds)
+    .fillColor(color)
+    .fillOpacity(final ? 0.38 : 0.22)
+    .strokeColor(color)
+    .strokeWidth(3)
+    .layer("DRAWING")
+    .disableHit(true)
+    .locked(true)
+    .build();
+}
+
+async function showShared(pts: Pt[]) {
+  window.clearTimeout(sharedTimer);
+  await OBR.scene.local.deleteItems([SHARED_ID]).catch(() => undefined);
+  await OBR.scene.local.addItems([pathFor(SHARED_ID, pts, "#a99bff", true)]);
+}
+
+function hideSharedLater() {
+  window.clearTimeout(sharedTimer);
+  sharedTimer = window.setTimeout(() => void OBR.scene.local.deleteItems([SHARED_ID]).catch(() => undefined), 6000);
 }
 
 /** `ok = false` pinta a área de vermelho (fora do alcance). */
@@ -90,6 +128,10 @@ async function drawShape(pts: Pt[], final: boolean, ok = true) {
     if (drawn) await OBR.scene.local.deleteItems([SHAPE_ID]);
     await OBR.scene.local.addItems([item]);
     drawn = true;
+    if (final && ok) {
+      const msg: AreaShareMsg = { pts };
+      void OBR.broadcast.sendMessage(AREA_SHARE, msg, { destination: "REMOTE" }).catch(() => undefined);
+    }
   } finally {
     drawing = false;
   }
@@ -228,6 +270,8 @@ async function place(raw: Pt) {
 }
 
 export async function initAreaTool() {
+  OBR.broadcast.onMessage(AREA_SHARE, (e) => void showShared((e.data as AreaShareMsg).pts));
+  OBR.broadcast.onMessage(AREA_UNSHARE, () => hideSharedLater());
   try {
     await OBR.tool.create({
       id: TOOL,

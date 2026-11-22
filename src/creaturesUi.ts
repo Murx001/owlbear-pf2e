@@ -782,6 +782,8 @@ export function initCreatures(root: HTMLElement) {
     render();
     const node = root.querySelector<HTMLElement>(`[data-cid="${id}"]`);
     if (!node) return;
+    // Se o cartão está dentro de uma seção recolhida (Em jogo), abre para a criatura aparecer.
+    for (let d = node.closest("details"); d; d = d.parentElement?.closest("details") ?? null) d.open = true;
     node.scrollIntoView({ block: "center", behavior: "smooth" });
     node.classList.add("focus");
     window.setTimeout(() => node.classList.remove("focus"), 2500);

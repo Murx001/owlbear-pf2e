@@ -288,11 +288,12 @@ async function sync() {
       );
     }
 
-    // CA no escudinho, ao lado esquerdo do token (a coluna de condições fica à direita).
+    // CA no escudinho, no canto inferior direito do token, perto da barra de PV.
     if (o.ac !== undefined) {
       const sz = Math.max(26, dpi * 0.34);
-      const sx = b.min.x - sz - 4;
-      const sy = b.min.y;
+      // Canto inferior direito do token, encostado na ponta direita da barra de PV.
+      const sx = b.max.x - sz * 0.8;
+      const sy = barY + barH / 2 - sz * 0.85;
       const pt = (x: number, y: number) => [x * sz, y * sz];
       const [x0, y0] = pt(0, 0);
       const [x1] = pt(1, 0);

@@ -241,3 +241,8 @@ Na grade, uma **emanação de 10 pés** cobre **2 casas** em volta do conjurador
 1. O campo **Alvo (CD/CA)** saiu da aba Agir: ataques escolhem o alvo pelo **token** no mapa. Na aba **Testes** ele virou **CD do teste** (opcional), para testes de perícia contra uma CD.
 2. **Bônus extra (próxima rolagem)** está em Agir e em Testes (é o mesmo campo). Digite, por exemplo, +2 (ou −1) e role: o bônus entra **só nessa rolagem** e o campo volta a zero. Em testes, o cartão mostra "(bônus extra +2)".
 3. Na aba **Ficha**, o bloco **Ajustes manuais** corrige dados: **Ajuste de CA** (ex.: +1 num lugar que dá bônus de defesa) e **Ajuste de PV máximo**. Mudam a CA no cabeçalho, na ficha, no escudinho do token e a CA usada contra ataques. Apagar o número desfaz o ajuste.
+
+### 29. Área visível a todos, escudo no canto e toque no token (mestre)
+1. **Área de magia para todos:** ao posicionar a área (cone, explosão, emanação), ela aparece **também para os outros jogadores** na hora em que é posicionada (a prévia seguindo o mouse é só de quem conjura). Depois de resolver, ela some para os outros em cerca de 6 segundos. Se estiver fora do alcance (vermelha), não é mostrada.
+2. **Escudo da CA** agora fica no **canto inferior direito** do token, encostado na ponta da barra de PV.
+3. **Mestre toca num token de criatura:** vai para a aba Mestre, **abre a seção "Em jogo"** se estiver recolhida, rola até o cartão da criatura, destaca e abre a ficha completa.
