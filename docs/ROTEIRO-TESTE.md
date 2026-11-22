@@ -296,3 +296,7 @@ Ao acabar a condição (tempo contado na aba Combate, ou removida à mão), a **
 1. Não existe mais a opção de rolagem automática (nem para o mestre, nem para o jogador): tudo pergunta antes de rolar.
 2. O botão **Histórico** abre e fecha a barra da direita e **não esconde mais o painel** (antes ele deixava a janela vazia).
 3. O dano de um ataque vai primeiro para os **PV temporários**; por isso um ataque pode "não tirar PV" se o alvo tinha PV temporários (o cartão e o histórico mostram "PV de X: a/b").
+
+### 40. Lixeira para remover criaturas
+1. No **bestiário (janela grande)**, cada modelo tem um ícone de **lixeira** ao lado de Vincular: remove o modelo do bestiário (pede confirmação). Serve para apagar duplicatas. As criaturas já em jogo continuam.
+2. Em **Mestre > Em jogo**, cada criatura tem uma lixeira no cabeçalho: **desvincula do token e remove** a criatura (pede confirmação).

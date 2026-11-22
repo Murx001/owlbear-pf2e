@@ -651,3 +651,30 @@ button.gear {
   justify-content: flex-start;
   padding: 6px 10px;
 }
+
+/* ícone de lixeira (remover criatura) */
+button.trash {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  padding: 0;
+  background: transparent;
+  color: var(--dim);
+  border: 1px solid var(--line2);
+  border-radius: 8px;
+}
+button.trash svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+button.trash:hover {
+  color: #ff7b74;
+  border-color: #ff7b74;
+}

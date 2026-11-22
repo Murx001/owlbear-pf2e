@@ -75,6 +75,34 @@ function button(text: string, onClick: () => void | Promise<void>, cls?: string)
   return b;
 }
 
+/** Ícone de lixeira (SVG) para os botões de remover. */
+function trashSvg(): SVGElement {
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("aria-hidden", "true");
+  const path = document.createElementNS(ns, "path");
+  path.setAttribute("d", "M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3");
+  svg.append(path);
+  return svg;
+}
+
+function trashButton(title: string, onClick: () => void | Promise<void>, inSummary = false): HTMLButtonElement {
+  const b = el("button", "trash");
+  b.type = "button";
+  b.title = title;
+  b.setAttribute("aria-label", title);
+  b.append(trashSvg());
+  b.addEventListener("click", (ev) => {
+    if (inSummary) {
+      ev.preventDefault();
+      ev.stopPropagation();
+    }
+    void onClick();
+  });
+  return b;
+}
+
 /** Botão dentro de um <summary>: não pode abrir/fechar o cartão ao ser tocado. */
 function summaryButton(text: string, onClick: () => void | Promise<void>, cls?: string) {
   const b = el("button", cls, text);
@@ -383,7 +411,21 @@ export function initCreatures(root: HTMLElement, onRender?: () => void, part: Cr
       el("strong", undefined, c.name),
       el("span", "sub", `${c.level !== undefined ? `Nv ${c.level} · ` : ""}CA ${c.ac} · PV ${c.hpMax}`),
     );
-    sum.append(star, name, summaryButton("Vincular", () => linkSelected(c), "link"));
+    sum.append(
+      star,
+      name,
+      summaryButton("Vincular", () => linkSelected(c), "link"),
+      trashButton(
+        "Remover do bestiário",
+        () => {
+          if (confirm(`Remover o modelo ${c.name} do bestiário? As criaturas em jogo continuam.`)) {
+            removeCreature(c.id);
+            render();
+          }
+        },
+        true,
+      ),
+    );
     d.append(sum);
 
     // Corpo: a ficha completa e as ações.
@@ -829,6 +871,15 @@ export function initCreatures(root: HTMLElement, onRender?: () => void, part: Cr
       ),
     );
     head.append(summaryButton("⚙", () => { gearOpen.has(c.id) ? gearOpen.delete(c.id) : gearOpen.add(c.id); render(); }, "gear"));
+    head.append(
+      trashButton("Desvincular do token e remover", async () => {
+        if (confirm(`Remover ${c.name}? O vínculo com o token também será desfeito.`)) {
+          removeCreature(c.id);
+          await unlinkCreatureEverywhere(c.id).catch(() => undefined);
+          render();
+        }
+      }),
+    );
     li.append(head);
     if (gearOpen.has(c.id)) li.append(visibilityPanel(c));
 
