@@ -350,6 +350,7 @@ function applySettings() {
 }
 autoToggle.addEventListener("change", () => {
   playerAuto = autoToggle.checked;
+  if (current) renderSheet(current); // mostra ou esconde a caixa de flanqueio
   try {
     localStorage.setItem(AUTO_KEY, playerAuto ? "1" : "0");
   } catch {
@@ -365,6 +366,9 @@ allowToggle.addEventListener("change", () => {
 });
 
 /** Por padrão o jogador confirma antes de os dados rolarem. `ok: false` = cancelou. */
+/** Rolagem automática: marca que o alvo do próximo ataque está flanqueado. */
+let autoFlank = false;
+
 /** Alvos já marcados como flanqueados neste turno (volta a vazio quando o turno muda). */
 const flankMemory = new Map<string, boolean>();
 
@@ -374,7 +378,13 @@ function confirmRoll(
   /** Em ataques: nome do alvo, para oferecer a opção "alvo flanqueado". */
   flankTarget?: string,
 ): Promise<{ ok: boolean; flanked: boolean }> {
-  if (!mustAsk()) return Promise.resolve({ ok: true, flanked: false });
+  if (!mustAsk()) {
+    // Rolagem automática: não há cartão de pergunta, então o flanqueio vem da caixa marcada em Agir.
+    const flanked = flankTarget !== undefined && autoFlank;
+    autoFlank = false;
+    if (current) renderSheet(current);
+    return Promise.resolve({ ok: true, flanked });
+  }
   return new Promise((resolve) => {
     targetingEl.hidden = true; // uma coisa de cada vez na barra de ação
     confirmEl.replaceChildren();
@@ -1213,6 +1223,17 @@ function renderSheet(c: Character) {
 
   fichaEl.append(head, hpBlock(c), conditionsBlock(c), adjustBlock(c), tokenBlock(c));
   agirEl.append(extraField());
+  if (!mustAsk()) {
+    const lab = el("label", "flank-option");
+    const cb = el("input");
+    cb.type = "checkbox";
+    cb.checked = autoFlank;
+    cb.addEventListener("change", () => {
+      autoFlank = cb.checked;
+    });
+    lab.append(cb, " Alvo flanqueado no próximo ataque (Desprevenido: −2 na CA)");
+    agirEl.append(lab);
+  }
   const shield = shieldRow(c);
   if (shield) agirEl.append(shield);
   testesEl.append(targetField(), extraField());

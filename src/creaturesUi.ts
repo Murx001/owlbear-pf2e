@@ -36,10 +36,13 @@ import { durationLabel, pruneDurations } from "./durations";
 import { showCard } from "./cardView";
 import { publishRoll, signed } from "./roll";
 import {
+  CREATURE_KEY,
   creatureOfToken,
+  isCreatureLink,
   linkCreatureTokens,
   selectedTokenIds,
   unlinkCreatureEverywhere,
+  type CreatureLink,
 } from "./token";
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) {
@@ -747,6 +750,38 @@ export function initCreatures(root: HTMLElement) {
     return box;
   }
 
+  /** Tokens ligados a criaturas que este navegador não tem: os ataques contra eles falham. */
+  function orphanNotice(): HTMLElement {
+    const box = el("div");
+    void (async () => {
+      try {
+        const known = new Set(loadCreatures().map((c) => c.id));
+        const tokens = await OBR.scene.items.getItems((i) => isCreatureLink(i.metadata[CREATURE_KEY]));
+        const orphans = tokens.filter((t) => !known.has((t.metadata[CREATURE_KEY] as CreatureLink).id));
+        if (orphans.length === 0) return;
+        box.append(
+          el(
+            "p",
+            "status error",
+            `${orphans.length} token(s) no mapa estão ligados a criaturas que NÃO existem neste navegador. Ataques e magias contra eles dão "sem dados cadastrados". Vincule esses tokens de novo (a partir do bestiário) ou importe o backup das criaturas.`,
+          ),
+          button("Desvincular esses tokens", async () => {
+            await OBR.scene.items.updateItems(
+              orphans.map((t) => t.id),
+              (items) => {
+                for (const it of items) delete it.metadata[CREATURE_KEY];
+              },
+            );
+            render();
+          }),
+        );
+      } catch {
+        /* sem cena pronta */
+      }
+    })();
+    return box;
+  }
+
   function render() {
     root.replaceChildren();
     root.append(
@@ -772,6 +807,7 @@ export function initCreatures(root: HTMLElement) {
     }
     for (const c of instances) iul.append(instanceCard(c));
     inst.append(iul);
+    inst.append(orphanNotice());
 
     root.append(inst, backupSection());
   }

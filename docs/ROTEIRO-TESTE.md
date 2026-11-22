@@ -246,3 +246,7 @@ Na grade, uma **emanação de 10 pés** cobre **2 casas** em volta do conjurador
 1. **Área de magia para todos:** ao posicionar a área (cone, explosão, emanação), ela aparece **também para os outros jogadores** na hora em que é posicionada (a prévia seguindo o mouse é só de quem conjura). Depois de resolver, ela some para os outros em cerca de 6 segundos. Se estiver fora do alcance (vermelha), não é mostrada.
 2. **Escudo da CA** agora fica no **canto inferior direito** do token, encostado na ponta da barra de PV.
 3. **Mestre toca num token de criatura:** vai para a aba Mestre, **abre a seção "Em jogo"** se estiver recolhida, rola até o cartão da criatura, destaca e abre a ficha completa.
+
+### 30. Flanqueio na rolagem automática e criaturas sem dados
+1. Com a **rolagem automática** ligada (liberada pelo mestre e escolhida pelo jogador), a aba Agir mostra a caixa **"Alvo flanqueado no próximo ataque"**. Marcada, o próximo ataque trata o alvo como Desprevenido (−2 na CA) e a caixa desmarca sozinha. O **Bônus extra** também vale nesse modo. Com a pergunta ligada (padrão), o flanqueio continua no cartão de confirmação.
+2. Na aba **Mestre**, em **Em jogo**, aparece um aviso vermelho quando há tokens ligados a criaturas que **não existem neste navegador** (causa do erro "sem dados cadastrados"). O botão **Desvincular esses tokens** limpa o vínculo para vincular de novo a partir do bestiário.
