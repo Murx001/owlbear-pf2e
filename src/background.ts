@@ -307,9 +307,9 @@ async function sync() {
 
     // CA no escudinho, no canto inferior direito do token, perto da barra de PV.
     if (o.ac !== undefined) {
-      const sz = Math.max(26, dpi * 0.34);
+      const sz = Math.max(21, dpi * 0.27);
       // Canto inferior direito, sobre a borda do token e logo acima da ponta direita da barra de PV.
-      const sx = b.max.x - b.width * 0.14 - sz / 2;
+      const sx = b.max.x - b.width * 0.06 - sz / 2;
       const sy = b.max.y - b.height * 0.24 - sz * 0.5;
       const pt = (x: number, y: number) => [x * sz, y * sz];
       const [x0, y0] = pt(0, 0);
