@@ -220,10 +220,10 @@ Confira nos dois painéis e nos cartões: fundo escuro com detalhes dourados, t�
 4. Tokens vinculados antes desta versão valem para quem os criou.
 
 ### 25. Engrenagem de visibilidade das criaturas (mestre)
-1. Em **Em jogo**, cada criatura tem uma engrenagem **⚙**. Ela abre "Visível aos jogadores" com cinco opções separadas: **o token no mapa**, **o nome**, **a barra e o estado de PV (sem números)**, **os PV em números** e **as condições nas fichinhas**.
+1. Em **Em jogo**, cada criatura tem uma engrenagem **⚙**. Ela abre "Visível aos jogadores" com seis opções separadas: **o token no mapa**, **o nome**, **a barra e o estado de PV (sem números)**, **os PV em números**, **as condições nas fichinhas** e **a CA (escudinho no token)**.
 2. **Padrão** de uma criatura recém-vinculada: token **escondido** dos jogadores, nome "Criatura", sem condições, sem números. A **barra de PV** aparece (só com o estado: Ileso, Ferido…).
 3. Marque cada opção e confira, numa janela de jogador, que só aquilo muda: o token surge/some, o nome real aparece, os PV viram "PV 12/20", as condições voltam como fichinhas.
-4. O mestre sempre vê tudo (CA, PV, condições). A CA nunca é revelada aos jogadores.
+4. O mestre sempre vê tudo (CA, PV, condições). A CA só aparece para os jogadores se a opção da CA estiver ligada (padrão: escondida).
 5. Criaturas vinculadas antes desta versão passam a usar o padrão acima (nome "Criatura" até você ligar a opção).
 
 ### 26. PV dentro da barra, CA no escudinho e bônus de CA

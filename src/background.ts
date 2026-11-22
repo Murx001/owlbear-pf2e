@@ -91,6 +91,7 @@ async function publishCreatureStatuses() {
       link.name !== p.name ||
       !!link.noBar !== !!p.noBar ||
       (link.pv ?? "") !== (p.pv ?? "") ||
+      (link.ac ?? -1) !== (p.ac ?? -1) ||
       JSON.stringify(link.conditions ?? {}) !== JSON.stringify(p.conditions ?? {}) ||
       JSON.stringify(link.durations ?? {}) !== JSON.stringify(p.durations ?? {})
     );
@@ -164,6 +165,7 @@ async function collectOverlays(): Promise<Overlay[]> {
         name: link.name,
         line: [link.status, link.noBar && link.pv ? `PV ${link.pv}` : ""].filter(Boolean).join(" · "),
         barText: link.noBar ? "" : (link.pv ?? ""),
+        ac: link.ac,
         hp: Math.round((link.ratio ?? 1) * 100),
         max: 100,
         temp: 0,

@@ -527,6 +527,7 @@ export function initCreatures(root: HTMLElement) {
     row("O nome (desligado: \"Criatura\")", "name");
     row("A barra e o estado de PV (sem números)", "bar");
     row("Os PV em números", "numbers");
+    row("A CA (escudinho no token)", "ac");
     row("As condições nas fichinhas", "conditions");
     return box;
   }

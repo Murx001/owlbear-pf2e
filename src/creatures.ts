@@ -20,6 +20,8 @@ export interface CreatureShow {
   numbers?: boolean;
   /** Condições nas fichinhas do token (padrão: escondidas). */
   conditions?: boolean;
+  /** A CA, no escudinho do token (padrão: escondida). */
+  ac?: boolean;
 }
 
 /** Visibilidade já com os padrões: tudo escondido, menos a barra de PV. */
@@ -31,6 +33,7 @@ export function showOf(c: Pick<Creature, "show">): Required<CreatureShow> {
     bar: s.bar ?? true,
     numbers: s.numbers ?? false,
     conditions: s.conditions ?? false,
+    ac: s.ac ?? false,
   };
 }
 
@@ -135,6 +138,7 @@ export function publicLink(c: Creature): CreatureLink {
     conditions: sh.conditions ? (c.conditions ?? {}) : {},
     durations: sh.conditions ? c.durations : undefined,
     ...(sh.bar ? {} : { noBar: true }),
+    ...(sh.ac ? { ac: creatureAc(c).value } : {}),
     ...(sh.numbers ? { pv: `${Math.max(0, c.hp)}/${c.hpMax}${c.temp ? ` +${c.temp}` : ""}` } : {}),
   };
 }

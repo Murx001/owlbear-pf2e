@@ -48,6 +48,8 @@ export interface CreatureLink {
   noBar?: boolean;
   /** PV em números (ex.: "12/20"), só quando o mestre libera. */
   pv?: string;
+  /** CA, só quando o mestre libera. */
+  ac?: number;
   /** Condições da criatura, visíveis a todos (aparecem como tags no token). */
   conditions?: Record<string, number>;
   /** Tempo restante das condições, para mostrar nas tags. */
