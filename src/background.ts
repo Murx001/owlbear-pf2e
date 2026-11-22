@@ -348,7 +348,7 @@ async function sync() {
           .textType("PLAIN")
           .plainText(String(o.ac))
           .width(sz)
-          .height(sz * 0.8)
+          .height(sz * 0.95)
           .padding(0)
           .lineHeight(1)
           .textAlign("CENTER")
