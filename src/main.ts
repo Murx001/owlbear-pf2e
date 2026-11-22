@@ -123,6 +123,7 @@ app.innerHTML = `
       <div id="target-note" class="target-note" hidden></div>
       <div class="tbtns">
         <button type="button" id="rearm-area" hidden>Posicionar área</button>
+        <button type="button" id="manual-targets" hidden>Alvos à mão</button>
         <button type="button" id="multi-target" hidden>Vários alvos</button>
         <button type="button" id="resolve-targets" hidden>Resolver</button>
         <button type="button" id="clear-targets" hidden>Limpar</button>
@@ -331,6 +332,8 @@ const multiBtn = $<HTMLButtonElement>("#multi-target");
 const resolveBtn = $<HTMLButtonElement>("#resolve-targets");
 const clearBtn = $<HTMLButtonElement>("#clear-targets");
 const areaBtn = $<HTMLButtonElement>("#rearm-area");
+const handBtn = $<HTMLButtonElement>("#manual-targets");
+let handPick = false; // magia de área sem a área: o mestre/jogador marca os alvos clicando nos tokens
 const noteEl = $<HTMLDivElement>("#target-note");
 
 /* ---------- perguntar antes de rolar + cartão de resultados ---------- */
@@ -461,6 +464,7 @@ function updateBanner() {
   multiBtn.hidden = !isSpell;
   multiBtn.textContent = multiMode ? "Um alvo só" : "Vários alvos";
   areaBtn.hidden = !area;
+  handBtn.hidden = !area || handPick;
   resolveBtn.hidden = !multiMode;
   clearBtn.hidden = !multiMode;
   resolveBtn.textContent = `Resolver (${marked.length})`;
@@ -475,7 +479,9 @@ function updateBanner() {
       : area?.kind === "burst" && isSpellWithRange(p)
         ? `Posicione no mapa, no máximo a ${(p as SpellPending).cast.spell.rangeFeet} pés de você: fora do alcance a área fica vermelha (Esc cancela).`
         : "Posicione no mapa (Esc cancela).";
-  targetingEl.querySelector("span")!.textContent = area
+  targetingEl.querySelector("span")!.textContent = area && handPick
+    ? `${p.title}: alvos à mão, sem a área. ${marked.length} alvo(s) marcado(s)${names}. Clique nos tokens para marcar ou desmarcar e depois em Resolver; Posicionar área volta a usar a área.`
+    : area
     ? `${p.title}: ${KIND_PT[area.kind]} de ${area.feet} pés. ${where} ${marked.length} alvo(s) marcado(s)${names}. Ajuste clicando nos tokens e depois em Resolver.`
     : multiMode
       ? `${p.title}: ${marked.length} alvo(s) marcado(s)${names}. Clique nos tokens para marcar ou desmarcar e depois em Resolver.`
@@ -485,13 +491,26 @@ function updateBanner() {
 function setTargeting(p: Pending | null) {
   pending = p;
   multiMode = false;
+  handPick = false;
   marked = [];
   bannerNote = "";
   if (!p) clearArea(); // apaga a área desenhada no mapa
   updateBanner();
 }
 
-areaBtn.addEventListener("click", () => void armArea(true));
+areaBtn.addEventListener("click", () => {
+  handPick = false;
+  void armArea(true);
+  updateBanner();
+});
+handBtn.addEventListener("click", () => {
+  // Descarta a área desenhada e começa uma lista vazia: só entra quem for clicado.
+  handPick = true;
+  multiMode = true;
+  marked = [];
+  clearArea();
+  updateBanner();
+});
 
 function cancelTargeting() {
   setTargeting(null);

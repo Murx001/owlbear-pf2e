@@ -321,3 +321,6 @@ Em **Mestre**, cada criatura em jogo é uma **linha só** (nome, CA, PV, estado,
 
 ### 47. Iniciativa só das criaturas marcadas
 Em **Mestre > Em jogo**, cada criatura tem uma **caixinha** à esquerda. Marque as que entram na iniciativa: ao marcar, aparece um campo para **digitar a iniciativa** (vazio = rola d20 + Percepção, com as condições). **Iniciativa das marcadas (N)** coloca todas de uma vez; **Marcar todas/Desmarcar todas** ajuda. O botão **Iniciativa** de dentro do cartão também usa o valor digitado. Substitui o antigo "Rolar iniciativa de todas".
+
+### 48. Alvos à mão em magias e habilidades de área
+Na faixa de alvos de uma magia (ou habilidade de criatura) **com área**, o botão **Alvos à mão** descarta a área desenhada e começa uma lista vazia: clique nos tokens para marcar/desmarcar e use **Resolver**. **Posicionar área** volta a usar a área.
