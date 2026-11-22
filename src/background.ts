@@ -210,17 +210,31 @@ async function sync() {
     const ratio = Math.max(0, Math.min(1, o.hp / o.max));
     const scale = Math.max(o.max, o.hp + o.temp); // a barra representa o PV máximo
     const barH = Math.max(o.barText ? 16 : 7, dpi * (o.barText ? 0.2 : 0.12));
-    const barY = b.max.y - barH;
+    // Barra em pílula, um pouco mais estreita que o token e encostada na borda de baixo (cabe no círculo).
+    const barW = b.width * 0.8;
+    const barX = b.center.x - barW / 2;
+    const barY = b.max.y - barH * 0.7;
     const textW = Math.max(b.width, dpi * 1.5);
     const [bgId, fillId, txtId, tempId, barTxtId, acBgId, acTxtId] = idsFor(o.tokenId);
 
-    const rect = (id: string, name: string, x: number, w: number, color: string, opacity = 1) =>
-      buildShape()
+    // Retângulo de cantos redondos nos lados pedidos (esquerda/direita), como a barra de PV.
+    const rect = (id: string, name: string, x: number, w: number, color: string, opacity = 1, roundLeft = true, roundRight = true) => {
+      const ww = Math.max(0.5, w);
+      const r = Math.min(barH / 2, ww / 2);
+      const K = 0.5523 * r;
+      const MOVE = 0, LINE = 1, CUBIC = 4, CLOSE = 5;
+      const cmds: number[][] = [[MOVE, roundLeft ? r : 0, 0], [LINE, ww - (roundRight ? r : 0), 0]];
+      if (roundRight) {
+        cmds.push([CUBIC, ww - r + K, 0, ww, r - K, ww, r], [CUBIC, ww, r + K, ww - r + K, barH, ww - r, barH]);
+      } else cmds.push([LINE, ww, 0], [LINE, ww, barH]);
+      cmds.push([LINE, roundLeft ? r : 0, barH]);
+      if (roundLeft) cmds.push([CUBIC, r - K, barH, 0, r + K, 0, r], [CUBIC, 0, r - K, r - K, 0, r, 0]);
+      else cmds.push([LINE, 0, 0]);
+      cmds.push([CLOSE]);
+      return buildPath()
         .id(id)
         .name(name)
-        .shapeType("RECTANGLE")
-        .width(Math.max(0.01, w))
-        .height(barH)
+        .commands(cmds as never)
         .position({ x, y: barY })
         .fillColor(color)
         .fillOpacity(opacity)
@@ -232,12 +246,13 @@ async function sync() {
         .visible(o.visible)
         .metadata({ [MARK]: true })
         .build();
+    };
 
     const items: Item[] = [
       ...(o.bar
         ? [
-            rect(bgId, "PF2e PV (fundo)", b.min.x, b.width, "#10121c", 0.85),
-            rect(fillId, "PF2e PV", b.min.x, b.width * (o.hp / scale), colorFor(ratio)),
+            rect(bgId, "PF2e PV (fundo)", barX, barW, "#10121c", 0.85),
+            rect(fillId, "PF2e PV", barX, barW * (o.hp / scale), colorFor(ratio), 1, true, o.temp === 0 && o.hp >= scale),
           ]
         : []),
       buildText()
@@ -248,7 +263,7 @@ async function sync() {
         .width(textW)
         .height(dpi * 0.4)
         .lineHeight(1.15)
-        .position({ x: b.center.x - textW / 2, y: b.max.y + 2 })
+        .position({ x: b.center.x - textW / 2, y: (o.bar ? barY + barH : b.max.y) + 2 })
         .textAlign("CENTER")
         .fontSize(Math.max(10, dpi * 0.1))
         .fontWeight(700)
@@ -269,7 +284,7 @@ async function sync() {
           .name("PF2e PV (números)")
           .textType("PLAIN")
           .plainText(o.barText)
-          .width(b.width)
+          .width(barW)
           .height(barH)
           .padding(0)
           .lineHeight(1)
@@ -280,7 +295,7 @@ async function sync() {
           .fillColor("#ffffff")
           .strokeColor("#10121c")
           .strokeWidth(1.5)
-          .position({ x: b.min.x, y: barY })
+          .position({ x: barX, y: barY })
           .layer("TEXT")
           .disableHit(true)
           .locked(true)
@@ -293,9 +308,9 @@ async function sync() {
     // CA no escudinho, no canto inferior direito do token, perto da barra de PV.
     if (o.ac !== undefined) {
       const sz = Math.max(26, dpi * 0.34);
-      // Canto inferior direito do token, encostado na ponta direita da barra de PV.
-      const sx = b.max.x - sz * 0.8;
-      const sy = barY + barH / 2 - sz * 0.85;
+      // Canto inferior direito, sobre a borda do token e logo acima da ponta direita da barra de PV.
+      const sx = b.max.x - b.width * 0.14 - sz / 2;
+      const sy = b.max.y - b.height * 0.24 - sz * 0.5;
       const pt = (x: number, y: number) => [x * sz, y * sz];
       const [x0, y0] = pt(0, 0);
       const [x1] = pt(1, 0);
@@ -354,7 +369,7 @@ async function sync() {
 
     if (o.bar && o.temp > 0) {
       items.push(
-        rect(tempId, "PF2e PV temporário", b.min.x + b.width * (o.hp / scale), b.width * (o.temp / scale), TEMP_COLOR),
+        rect(tempId, "PF2e PV temporário", barX + barW * (o.hp / scale), barW * (o.temp / scale), TEMP_COLOR, 1, o.hp <= 0, o.hp + o.temp >= scale),
       );
     }
 

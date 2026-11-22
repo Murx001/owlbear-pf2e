@@ -330,3 +330,6 @@ Ao escolher o alvo de um ataque de criatura (Mestre > Ataques), aparece a **mesm
 
 ### 50. Ataques de criaturas iguais aos dos jogadores
 Em Mestre > cada criatura > **Ataques**, cada ataque tem a mesma linha da ficha do jogador: nome + botão **Ataque +X** (já com o MAP da criatura) + botão **Dano XdY** (rola só o dano). **Ataque** mostra a **mesma faixa de alvo** dos jogadores ("…: selecione o token do alvo no mapa" com **Cancelar**; Esc também cancela), depois a tela "deseja rolar os dados?". Magias de área e habilidades de criatura já usavam a mesma faixa, com **Alvos à mão**.
+
+### 51. Barra de PV e escudo da CA reposicionados
+Sobre o token, a **barra de PV** agora é uma **pílula** (cantos arredondados) um pouco mais estreita que o token, com os números dentro, encostada na borda de baixo; o **nome** fica logo abaixo dela. O **escudo da CA** (mesma cor e formato) fica no **canto inferior direito**, sobre a borda do token, logo acima da ponta da barra. Cores da barra (verde/amarelo/vermelho) e dos PV temporários não mudaram.
