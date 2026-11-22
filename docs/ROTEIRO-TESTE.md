@@ -277,3 +277,8 @@ O ícone roxo "Área PF2e" **não fica mais na barra de ferramentas**. Ele apare
 2. Em cada criatura de **Em jogo**, a linha **[condição] [valor] [rodadas] [Valor −1 por rodada] + Condição** aplica uma condição à mão. Com **rodadas**, ela acaba sozinha depois desse tempo (contado no início do turno de quem sofre). Com **Valor −1 por rodada**, o valor cai 1 no fim do turno dele até acabar (aparece "−1/rd"). **Amedrontado** já cai 1 por turno sozinho.
 3. **Atordoado** segue a regra do PF2e: no início do turno de quem sofre, o valor cai pela quantidade de ações perdidas (até 3) e acaba.
 4. Entraram condições que faltavam: Petrificado, Acelerado, Controlado, Sobrecarregado, Não detectado, Despercebido e Dano persistente. A contagem funciona para quem está na iniciativa (criaturas entram com **Iniciativa** ou **Rolar iniciativa de todas**).
+
+### 36. Bestiário em janela grande
+1. Na aba **Mestre**, o botão **Abrir bestiário (tela grande)** abre uma janela grande **no meio da tela** com a busca, os filtros, **Importar do Foundry** (com pesquisa por nome), **+ Nova criatura** e a lista de modelos. A aba Mestre fica só com **Em jogo**, iniciativa e backup.
+2. **Selecione os tokens no mapa antes** de abrir (a janela cobre parte do mapa) e toque em **Vincular** na criatura escolhida. As criaturas novas aparecem em **Em jogo** na hora, sem fechar a janela. Feche com **×** ou **Esc**.
+3. Na importação do Foundry, digite parte do nome em inglês (ex.: `wolf`, `dragon`) e toque no resultado.

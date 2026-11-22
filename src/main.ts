@@ -1809,7 +1809,9 @@ OBR.onReady(async () => {
   // Aba de criaturas: só o mestre vê (os dados ficam no navegador dele).
   if ((await OBR.player.getRole()) === "GM") {
     $("#creatures-tab").hidden = false;
-    creaturesUi = initCreatures($("#gm-creatures"), () => renderMasterHud());
+    // Em produção o painel mostra só as criaturas em jogo; os testes de tela podem pedir tudo junto.
+    const part = (window as unknown as { __PF2E_PART?: "play" | "all" }).__PF2E_PART ?? "play";
+    creaturesUi = initCreatures($("#gm-creatures"), () => renderMasterHud(), part);
     isGmRole = true;
   }
   combatUi = await initCombat($("#tab-combate"), {

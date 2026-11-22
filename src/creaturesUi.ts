@@ -38,6 +38,7 @@ import { addCombatant, loadCombat, saveCombat } from "./combat";
 import { COND_BY_KEY, CONDITIONS } from "./conditions";
 import { durationLabel, pruneDurations } from "./durations";
 import { showCard } from "./cardView";
+import { openBestiary } from "./bestiaryView";
 import {
   attacksMade,
   beginCreatureAttack,
@@ -105,7 +106,15 @@ const byName = (a: Creature, b: Creature) =>
  * separadamente. Os modelos podem ser buscados, filtrados, agrupados em pastas, marcados como
  * favoritos, duplicados e importados do Foundry. Os dados ficam só neste navegador.
  */
-export function initCreatures(root: HTMLElement, onRender?: () => void) {
+/**
+ * `part`: "play" = criaturas em jogo, iniciativa e backup (painel do mestre); "bestiary" = busca,
+ * importação do Foundry e modelos (janela grande no meio da tela); "all" = tudo junto.
+ */
+export type CreaturesPart = "play" | "bestiary" | "all";
+
+export function initCreatures(root: HTMLElement, onRender?: () => void, part: CreaturesPart = "all") {
+  const showBestiary = part !== "play";
+  const showPlay = part !== "bestiary";
   let editing: Creature | null = null;
   let message = "";
   let showForm = false;
@@ -981,19 +990,36 @@ export function initCreatures(root: HTMLElement, onRender?: () => void) {
 
   function render() {
     root.replaceChildren();
-    root.append(
-      el(
-        "p",
-        "sub",
-        "Ligue um modelo a vários tokens: cada token vira uma criatura própria, com PV e condições separados. Os jogadores só veem o estado (Ileso, Ferido…).",
-      ),
-    );
-    const f = form();
-    const imp = importBox();
-    if (f) root.append(f);
-    if (imp) root.append(imp);
+    if (showPlay) {
+      root.append(
+        el(
+          "p",
+          "sub",
+          "Ligue um modelo a vários tokens: cada token vira uma criatura própria, com PV e condições separados. Os jogadores só veem o estado (Ileso, Ferido…).",
+        ),
+      );
+      root.append(button("Abrir bestiário (tela grande)", () => void openBestiary()));
+    } else {
+      root.append(
+        el(
+          "p",
+          "sub",
+          "Selecione os tokens no mapa e toque em Vincular na criatura escolhida. Fechar esta janela não perde nada.",
+        ),
+      );
+    }
+    if (showBestiary) {
+      const f = form();
+      const imp = importBox();
+      if (f) root.append(f);
+      if (imp) root.append(imp);
+    }
     if (message) root.append(el("p", "status", message));
-    root.append(toolbar());
+    if (showBestiary) root.append(toolbar());
+    if (!showPlay) {
+      onRender?.();
+      return;
+    }
 
     const instances = loadCreatures().filter(isInstance).sort(byName);
     const inst = el("section", "block");
