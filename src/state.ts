@@ -1,5 +1,5 @@
 import OBR from "@owlbear-rodeo/sdk";
-import type { Conditions } from "./conditions";
+import { acWithConditions, hpMaxWithConditions, type Conditions } from "./conditions";
 import type { Durations } from "./durations";
 
 /** Estado vivo de cada ficha, guardado nos metadados da sala (compartilhado com todos). */
@@ -12,6 +12,10 @@ export interface CharState {
   max?: number;
   /** CA efetiva (já com Desprevenido/Caído/Fatigado). Usada no texto sobre o token. */
   ac?: number;
+  /** Valores sem condições, para recalcular CA e PV máx. sempre que as condições mudam (de quem for). */
+  baseAc?: number;
+  baseMax?: number;
+  level?: number;
   /** Espaços de magia gastos, por rank ("1", "2"…). */
   slotsUsed?: Record<string, number>;
   /** Pontos de foco gastos. */
@@ -54,9 +58,24 @@ export async function loadState(id: string): Promise<CharState | undefined> {
   return parse(await OBR.room.getMetadata())[id];
 }
 
+/**
+ * CA e PV máximo efetivos a partir dos valores base e das condições de agora. Assim, quando uma
+ * condição some (acabou o tempo, foi removida), o que ela mudava na ficha e no token some junto.
+ */
+export function derive(st: CharState): CharState {
+  if (st.baseAc === undefined && (st.baseMax === undefined || st.level === undefined)) return st;
+  const next = { ...st };
+  if (st.baseAc !== undefined) next.ac = acWithConditions(st.baseAc, st.conditions).value;
+  if (st.baseMax !== undefined && st.level !== undefined) {
+    next.max = hpMaxWithConditions(st.baseMax, st.level, st.conditions);
+    next.hp = Math.min(next.hp, next.max);
+  }
+  return next;
+}
+
 export async function saveState(id: string, st: CharState): Promise<void> {
   const all = parse(await OBR.room.getMetadata());
-  await OBR.room.setMetadata({ [KEY]: { ...all, [id]: st } });
+  await OBR.room.setMetadata({ [KEY]: { ...all, [id]: derive(st) } });
 }
 
 export function onStateChange(cb: (all: All) => void): () => void {

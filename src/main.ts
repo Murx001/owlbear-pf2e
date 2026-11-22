@@ -1055,6 +1055,9 @@ const maxHp = (c: Character) => hpMaxWithConditions(c.hpMax + (state.adj?.hp ?? 
 const baseAc = (c: Character) => c.ac + (state.adj?.ac ?? 0);
 
 function commit(c: Character) {
+  state.baseAc = baseAc(c);
+  state.baseMax = c.hpMax + (state.adj?.hp ?? 0);
+  state.level = c.level;
   state.max = maxHp(c);
   state.hp = Math.min(state.hp, state.max);
   state.ac = acWithConditions(baseAc(c), state.conditions).value;
@@ -1736,6 +1739,9 @@ async function importById(id: string) {
     const stored = await loadState(id).catch(() => undefined);
     state = stored ?? newState(c);
     // Garante PV máx. e CA no estado e grava na sala: sem isso, o token vinculado não mostra a barra.
+    state.baseAc = baseAc(c);
+    state.baseMax = c.hpMax + (state.adj?.hp ?? 0);
+    state.level = c.level;
     state.max = maxHp(c);
     state.ac = acWithConditions(baseAc(c), state.conditions).value;
     if (JSON.stringify(stored) !== JSON.stringify(state)) {

@@ -282,3 +282,6 @@ O ícone roxo "Área PF2e" **não fica mais na barra de ferramentas**. Ele apare
 1. Na aba **Mestre**, o botão **Abrir bestiário (tela grande)** abre uma janela grande **no meio da tela** com a busca, os filtros, **Importar do Foundry** (com pesquisa por nome), **+ Nova criatura** e a lista de modelos. A aba Mestre fica só com **Em jogo**, iniciativa e backup.
 2. **Selecione os tokens no mapa antes** de abrir (a janela cobre parte do mapa) e toque em **Vincular** na criatura escolhida. As criaturas novas aparecem em **Em jogo** na hora, sem fechar a janela. Feche com **×** ou **Esc**.
 3. Na importação do Foundry, digite parte do nome em inglês (ex.: `wolf`, `dragon`) e toque no resultado.
+
+### 37. O que a condição muda some junto com ela
+Ao acabar a condição (tempo contado na aba Combate, ou removida à mão), a **CA** e o **PV máximo** voltam ao normal na ficha, no cabeçalho, no escudinho do token e para os ataques contra o personagem. Teste: lance Escudo (CA 21 → 22), passe o turno/rodada até a fichinha sumir e confira que a CA voltou a 21 em todo lugar. Vale também para Desprevenido, Caído, Fatigado, Drenado e Escudo erguido. Fichas salvas antes desta versão passam a se corrigir sozinhas quando o personagem faz qualquer ação ou é importado de novo.
