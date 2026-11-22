@@ -1,0 +1,54 @@
+html,
+body {
+  margin: 0;
+  background: transparent;
+}
+#btn {
+  padding: 4px;
+}
+button#scroll {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--gold2);
+  background: radial-gradient(circle at 35% 30%, var(--panel3), var(--ink));
+  border: 2px solid var(--gold);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  transition: transform 0.08s, border-color 0.12s;
+}
+button#scroll:hover {
+  border-color: var(--gold2);
+  transform: scale(1.05);
+}
+button#scroll svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.dot {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: var(--blood);
+  color: #fff;
+  font: 700 11px/18px var(--sans);
+  text-align: center;
+  border: 1px solid var(--ink);
+}
+.dot[hidden] {
+  display: none;
+}

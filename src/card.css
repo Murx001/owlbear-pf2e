@@ -1,0 +1,253 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, "Segoe UI", sans-serif;
+  font-size: 14px;
+}
+html,
+body {
+  margin: 0;
+  background: transparent;
+  color: #eef0f6;
+}
+body {
+  padding: 12px;
+}
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: 1px solid #4a4f66;
+  background: #2b2f42;
+  border-radius: 8px;
+  padding: 2px 8px;
+}
+.sub {
+  font-size: 12px;
+  color: #b8bdd0;
+}
+.card {
+  background: #171a26;
+  border: 1px solid #4a4f66;
+  border-left: 6px solid #4a4f66;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.55);
+}
+.card.spell {
+  border-left-color: #7c6bd6;
+}
+.card.crit-success {
+  border-left-color: #4cc38a;
+}
+.card.success {
+  border-left-color: #7fd1a0;
+}
+.card.failure {
+  border-left-color: #e0a04a;
+}
+.card.crit-failure {
+  border-left-color: #e5534b;
+}
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+.card-head strong {
+  font-size: 16px;
+}
+.card-row {
+  display: flex;
+  gap: 8px;
+  font-size: 14px;
+}
+.card-row .k {
+  width: 92px;
+  flex: none;
+  color: #b8bdd0;
+}
+.card-row .v {
+  flex: 1;
+}
+.card-row.pen {
+  border-top: 1px solid #353a52;
+  padding-top: 8px;
+  color: #e0a04a;
+}
+.card-row.down .v {
+  color: #e5534b;
+  font-weight: 700;
+}
+.card-row.effect .v {
+  font-size: 12px;
+  color: #b8bdd0;
+}
+.card-row.big .v {
+  font-size: 18px;
+}
+.card-target {
+  border-top: 1px solid #353a52;
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.card-target.crit-failure {
+  border-left: 3px solid #4cc38a;
+  padding-left: 8px;
+}
+.card-target.failure {
+  border-left: 3px solid #7fd1a0;
+  padding-left: 8px;
+}
+.card-target.success {
+  border-left: 3px solid #e0a04a;
+  padding-left: 8px;
+}
+.card-target.crit-success {
+  border-left: 3px solid #e5534b;
+  padding-left: 8px;
+}
+.badge {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid #4a4f66;
+}
+.badge.crit-failure {
+  color: #4cc38a;
+  border-color: #4cc38a;
+}
+.badge.failure {
+  color: #7fd1a0;
+  border-color: #7fd1a0;
+}
+.badge.success {
+  color: #e0a04a;
+  border-color: #e0a04a;
+}
+.badge.crit-success {
+  color: #e5534b;
+  border-color: #e5534b;
+}
+
+.traits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.trait {
+  font-size: 11px;
+  border: 1px solid #4a4f66;
+  border-radius: 999px;
+  padding: 1px 8px;
+  color: #b8bdd0;
+}
+.spell-desc {
+  max-height: 260px;
+  overflow: auto;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #dfe2ee;
+  border-top: 1px solid #353a52;
+  padding-top: 8px;
+}
+.spell-desc p {
+  margin: 0 0 8px;
+}
+button.cast {
+  min-height: 44px;
+  font-weight: 700;
+  background: #7c6bd6;
+  border-color: #a99bff;
+}
+.card-foot {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-height: 18px;
+}
+button.share {
+  background: none;
+  border: none;
+  color: #8a90a8;
+  font-size: 11px;
+  text-decoration: underline;
+  padding: 2px 4px;
+}
+button.share:disabled {
+  text-decoration: none;
+  cursor: default;
+}
+
+/* ---------- tema "grimório" no cartão ---------- */
+:root {
+  font-family: var(--sans);
+  font-size: 15px;
+}
+.card {
+  background: linear-gradient(180deg, var(--panel2), var(--panel));
+  border-color: var(--line2);
+  box-shadow: var(--shadow), inset 0 0 0 1px rgba(211, 174, 100, 0.12);
+}
+.card-head strong {
+  font-family: var(--serif);
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  color: var(--gold2);
+  text-shadow: 0 1px 0 #000;
+}
+.card-head .sub {
+  font-style: italic;
+  color: var(--dim);
+}
+.card-row .k {
+  font-family: var(--serif);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dim);
+  padding-top: 2px;
+}
+.card-row.big .v strong {
+  font-family: var(--serif);
+  color: var(--gold2);
+}
+button {
+  font-family: var(--sans);
+  font-weight: 600;
+  color: var(--text);
+  background: linear-gradient(180deg, var(--panel3), var(--panel2));
+  border: 1px solid var(--line2);
+  border-radius: 8px;
+}
+button:hover:not(:disabled) {
+  border-color: var(--gold);
+}
+button.cast {
+  background: linear-gradient(180deg, #7a66d6, #5b49b0);
+  border-color: var(--arcane2);
+  color: #fff;
+  letter-spacing: 0.04em;
+}
+.trait {
+  border-color: var(--line2);
+  color: var(--dim);
+}
+.spell-desc {
+  border-top-color: rgba(211, 174, 100, 0.35);
+}
+.card-target {
+  border-top-color: rgba(211, 174, 100, 0.25);
+}
+button.share {
+  background: none;
+  border: none;
+  box-shadow: none;
+}

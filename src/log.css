@@ -1,0 +1,136 @@
+html,
+body {
+  margin: 0;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+}
+body {
+  padding: 4px;
+}
+#panel {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 8px);
+  background:
+    radial-gradient(ellipse 90% 40% at 0% 0%, rgba(140, 120, 224, 0.14), transparent 60%),
+    var(--grain),
+    linear-gradient(180deg, var(--panel2), var(--bg));
+  border: 1px solid var(--line2);
+  border-radius: 12px;
+  box-shadow: var(--shadow), inset 0 0 0 1px rgba(211, 174, 100, 0.14);
+  overflow: hidden;
+}
+.log-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(211, 174, 100, 0.35);
+}
+.log-head strong {
+  font-family: var(--serif);
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold2);
+}
+.log-actions {
+  display: flex;
+  gap: 4px;
+}
+button.ghost {
+  font: inherit;
+  font-size: 12px;
+  color: var(--dim);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+button.ghost:hover {
+  color: var(--gold2);
+  border-color: var(--line2);
+}
+.log-list {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line2) transparent;
+}
+.log-list li {
+  background: linear-gradient(180deg, var(--panel2), var(--panel));
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--line2);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.log-list li.empty {
+  border: 1px dashed var(--line2);
+  color: var(--dim);
+  font-style: italic;
+  text-align: center;
+}
+.log-list li.event {
+  border-left-color: var(--arcane);
+}
+.log-list li.crit-success {
+  border-left-color: var(--good);
+}
+.log-list li.success {
+  border-left-color: #7fd1a0;
+}
+.log-list li.failure {
+  border-left-color: var(--warn);
+}
+.log-list li.crit-failure {
+  border-left-color: var(--blood);
+}
+.head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+.who {
+  font-family: var(--serif);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.label,
+.detail {
+  color: var(--dim);
+}
+.body strong {
+  font-family: var(--serif);
+  font-size: 20px;
+  color: var(--gold2);
+}
+.degree {
+  float: right;
+  font-weight: 700;
+}
+.crit-success .degree {
+  color: var(--good);
+}
+.success .degree {
+  color: #7fd1a0;
+}
+.failure .degree {
+  color: var(--warn);
+}
+.crit-failure .degree {
+  color: #ff7b74;
+}

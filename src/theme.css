@@ -1,0 +1,594 @@
+/* Tema visual do painel. Vem depois de style.css e sobrescreve a aparência (não o comportamento). */
+
+:root {
+  font-family: var(--sans);
+  font-size: 15px;
+}
+body {
+  color: var(--text);
+  background:
+    radial-gradient(ellipse 80% 50% at 0% 0%, rgba(140, 120, 224, 0.12), transparent 60%),
+    radial-gradient(ellipse 70% 50% at 100% 100%, rgba(211, 174, 100, 0.08), transparent 60%),
+    var(--grain),
+    var(--bg);
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line2) transparent;
+}
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line2);
+  border-radius: 8px;
+}
+
+/* ---------- botões e campos ---------- */
+button {
+  font-family: var(--sans);
+  font-weight: 600;
+  color: var(--text);
+  background: linear-gradient(180deg, var(--panel3), var(--panel2));
+  border: 1px solid var(--line2);
+  border-radius: 8px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: border-color 0.12s, background 0.12s, transform 0.06s;
+}
+button:hover:not(:disabled) {
+  border-color: var(--gold);
+  background: linear-gradient(180deg, #2d3450, var(--panel3));
+}
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--arcane2);
+  outline-offset: 1px;
+}
+button:disabled {
+  opacity: 0.5;
+}
+input,
+select,
+textarea {
+  font-family: var(--sans);
+  color: var(--text);
+  background: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--gold);
+}
+.roll,
+button.cast {
+  background: linear-gradient(180deg, #7a66d6, #5b49b0);
+  border-color: var(--arcane2);
+  color: #fff;
+  letter-spacing: 0.03em;
+}
+.roll:hover:not(:disabled),
+button.cast:hover:not(:disabled) {
+  background: linear-gradient(180deg, #8c78e0, #6a58c4);
+  border-color: var(--gold2);
+}
+
+/* ---------- abas (com ícones) ---------- */
+.tabs {
+  gap: 4px;
+  padding: 4px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.tabs button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 4px 4px;
+  background: transparent;
+  border: 1px solid transparent;
+  box-shadow: none;
+  color: var(--dim);
+  font-family: var(--serif);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.tabs button svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.tabs button:hover:not(:disabled) {
+  color: var(--gold2);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: transparent;
+}
+.tabs button.active {
+  color: var(--gold2);
+  background: linear-gradient(180deg, rgba(140, 120, 224, 0.28), rgba(140, 120, 224, 0.08));
+  border-color: var(--arcane);
+  box-shadow: 0 0 0 1px rgba(211, 174, 100, 0.25) inset, 0 4px 14px rgba(140, 120, 224, 0.25);
+}
+/* toque: barra embaixo, ícone sobre o rótulo */
+@media (pointer: coarse) {
+  .tabs {
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+  }
+  .tabs button {
+    flex-direction: column;
+    gap: 2px;
+    min-height: 56px;
+    font-size: 10px;
+  }
+  .tabs button svg {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+/* ---------- cabeçalho fixo (HUD) ---------- */
+.hud {
+  position: relative;
+  background: linear-gradient(180deg, var(--panel2), var(--panel));
+  border: 1px solid var(--line2);
+  border-radius: 12px;
+  box-shadow: var(--shadow), inset 0 0 0 1px rgba(211, 174, 100, 0.12);
+  padding: 8px 12px 8px;
+}
+/* cantos de ouro */
+.hud::before,
+.hud::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--gold);
+  pointer-events: none;
+}
+.hud::before {
+  top: -1px;
+  left: -1px;
+  border-right: 0;
+  border-bottom: 0;
+  border-top-left-radius: 12px;
+}
+.hud::after {
+  bottom: -1px;
+  right: -1px;
+  border-left: 0;
+  border-top: 0;
+  border-bottom-right-radius: 12px;
+}
+.hud-top {
+  gap: 12px;
+}
+.hud-name strong {
+  font-family: var(--serif);
+  font-size: 17px;
+  letter-spacing: 0.04em;
+  color: var(--gold2);
+  text-shadow: 0 1px 0 #000;
+}
+.hud-name .sub {
+  font-size: 12px;
+  color: var(--dim);
+  font-style: italic;
+}
+.hud-hp {
+  font-size: 12px;
+  letter-spacing: 0.03em;
+}
+.hud-hp .hp-bar,
+.hp-bar {
+  background: var(--ink);
+  border: 1px solid var(--line2);
+  border-radius: 999px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+}
+.hp-fill {
+  background: linear-gradient(180deg, #7ddba8, var(--good));
+}
+.hp-temp {
+  background: linear-gradient(180deg, #8ecdf0, var(--frost));
+}
+/* CA em forma de escudo */
+.hud-ac {
+  position: relative;
+  width: 46px;
+  height: 54px;
+  min-width: 0;
+  padding: 0;
+  background: none;
+  display: grid;
+  place-content: center;
+  text-align: center;
+}
+.hud-ac::before,
+.hud-ac::after {
+  content: "";
+  position: absolute;
+  clip-path: polygon(50% 0, 100% 14%, 100% 58%, 50% 100%, 0 58%, 0 14%);
+}
+.hud-ac::before {
+  inset: 0;
+  background: linear-gradient(160deg, var(--gold2), var(--gold) 60%, #8f7236);
+}
+.hud-ac::after {
+  inset: 2px;
+  background: linear-gradient(180deg, #1c2133, var(--ink));
+}
+.hud-ac strong,
+.hud-ac span {
+  position: relative;
+  z-index: 1;
+  line-height: 1.05;
+}
+.hud-ac strong {
+  font-family: var(--serif);
+  font-size: 19px;
+  color: var(--gold2);
+}
+.hud-ac span {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--dim);
+}
+.hud-ac.penalized strong {
+  color: var(--warn);
+}
+.hud-tag {
+  font-family: var(--sans);
+  letter-spacing: 0.02em;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- blocos recolhíveis ---------- */
+.block {
+  background: linear-gradient(180deg, var(--panel2), var(--panel));
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 8px 12px 10px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+.block h4 {
+  font-family: var(--serif);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin: 0;
+}
+details.block > summary {
+  gap: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid transparent;
+  background-image: linear-gradient(90deg, rgba(211, 174, 100, 0.5), rgba(211, 174, 100, 0));
+  background-size: 100% 1px;
+  background-position: bottom;
+  background-repeat: no-repeat;
+}
+details.block > summary::before {
+  content: "◆";
+  font-size: 8px;
+  color: var(--gold);
+  transform: none;
+  transition: transform 0.12s;
+}
+details.block[open] > summary::before {
+  transform: rotate(90deg);
+}
+.sub {
+  color: var(--dim);
+}
+.status {
+  font-size: 13px;
+  color: var(--dim);
+  font-style: italic;
+}
+.status.error {
+  color: #ff9b94;
+  font-style: normal;
+}
+
+/* ---------- números, atributos e perícias ---------- */
+button.stat {
+  background: linear-gradient(180deg, var(--panel3), var(--panel2));
+  border-color: var(--line2);
+  gap: 8px;
+}
+button.stat .lbl {
+  color: var(--dim);
+  font-size: 12px;
+  font-weight: 500;
+}
+button.stat .n {
+  font-family: var(--serif);
+  font-size: 16px;
+  color: var(--gold2);
+}
+button.stat .rank {
+  color: var(--arcane2);
+  border-color: var(--arcane);
+  border-radius: 6px;
+}
+button.stat:hover:not(:disabled) .lbl {
+  color: var(--text);
+}
+.penalized {
+  color: var(--warn) !important;
+}
+.hp-big strong {
+  font-family: var(--serif);
+  color: var(--gold2);
+}
+.quick button {
+  font-family: var(--serif);
+}
+.quick .dmg {
+  border-color: var(--blood);
+  color: #ffb8b2;
+}
+.quick .heal {
+  border-color: var(--good);
+  color: #aef0cc;
+}
+
+/* ---------- bolinhas de espaços de magia e foco (gemas) ---------- */
+.pips {
+  gap: 8px;
+}
+.pips .lbl {
+  font-family: var(--serif);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+button.pip {
+  width: 24px;
+  height: 24px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--gold);
+  background: radial-gradient(circle at 35% 30%, #232a40, var(--ink));
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+button.pip.on {
+  background: radial-gradient(circle at 35% 30%, var(--gold2), var(--gold) 65%, #8f7236);
+  border-color: var(--gold2);
+  box-shadow: 0 0 8px rgba(211, 174, 100, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.5);
+}
+@media (pointer: coarse) {
+  button.pip {
+    width: 30px;
+    height: 30px;
+    min-height: 0;
+  }
+}
+
+/* ---------- magias como runas ---------- */
+.spellrow strong {
+  font-family: var(--serif);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+button.spell {
+  background: linear-gradient(180deg, rgba(140, 120, 224, 0.2), rgba(140, 120, 224, 0.06));
+  border-color: var(--arcane);
+  color: var(--arcane2);
+  border-radius: 999px;
+  font-weight: 600;
+}
+button.spell:hover:not(:disabled) {
+  color: var(--gold2);
+  border-color: var(--gold);
+}
+button.spell.focus {
+  background: linear-gradient(180deg, rgba(211, 174, 100, 0.2), rgba(211, 174, 100, 0.05));
+  border-color: var(--gold);
+  color: var(--gold2);
+}
+
+/* ---------- ataques ---------- */
+.attack .aname {
+  font-family: var(--serif);
+  font-size: 13px;
+  color: var(--text);
+}
+
+/* ---------- condições ---------- */
+.chip {
+  background: rgba(140, 120, 224, 0.18);
+  border-color: var(--arcane);
+  color: var(--arcane2);
+}
+
+/* ---------- barra de ação (alvo, pergunta) ---------- */
+.targeting {
+  background: linear-gradient(180deg, rgba(140, 120, 224, 0.25), rgba(140, 120, 224, 0.1));
+  border: 1px solid var(--arcane);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.target-note {
+  background: rgba(196, 68, 63, 0.18);
+  border-color: var(--blood);
+}
+.card.flank-option,
+.flank-option {
+  color: var(--warn);
+}
+
+/* ---------- combate ---------- */
+.head-card h3 {
+  font-family: var(--serif);
+  color: var(--gold2);
+  letter-spacing: 0.04em;
+}
+.order li {
+  background: linear-gradient(180deg, var(--panel2), var(--panel));
+  border-left-color: var(--line2);
+  border-radius: 8px;
+}
+.order li.current {
+  border-left-color: var(--gold);
+  background: linear-gradient(90deg, rgba(211, 174, 100, 0.18), rgba(140, 120, 224, 0.1));
+  box-shadow: 0 0 0 1px rgba(211, 174, 100, 0.3) inset;
+}
+.order .v {
+  font-family: var(--serif);
+  color: var(--gold2);
+}
+
+/* ---------- histórico ---------- */
+.log li {
+  background: linear-gradient(180deg, var(--panel2), var(--panel));
+  border-radius: 8px;
+  font-size: 13px;
+}
+.log .who {
+  font-family: var(--serif);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+.log .body strong {
+  font-family: var(--serif);
+  color: var(--gold2);
+}
+.log .label,
+.log .detail {
+  color: var(--dim);
+}
+
+/* ---------- bestiário ---------- */
+.creature {
+  background: linear-gradient(180deg, var(--panel2), var(--panel));
+  border-radius: 8px;
+}
+.tpl-name strong {
+  font-family: var(--serif);
+  font-size: 14px;
+  letter-spacing: 0.03em;
+}
+summary.grp-sum {
+  font-family: var(--serif);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.trait {
+  border-color: var(--line2);
+  color: var(--dim);
+}
+button.link {
+  border-color: var(--arcane);
+  color: var(--arcane2);
+}
+
+/* ---------- aviso de rolagem automática ---------- */
+.manual-toggle {
+  color: var(--dim);
+}
+
+/* ---------- ajustes finos ---------- */
+label.target {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--dim);
+}
+label.target input {
+  width: 100px;
+  min-height: 36px;
+  padding: 4px 10px;
+}
+#sheet-ficha > button {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 8px;
+  border-color: var(--gold);
+  color: var(--gold2);
+  font-family: var(--serif);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.creatures {
+  gap: 6px;
+}
+.creature {
+  padding: 6px 10px;
+}
+.creature.template {
+  border-left-width: 3px;
+}
+details.grp {
+  margin-top: 2px;
+}
+
+/* ---------- ajuste: abas sempre cabem (ícone sobre o rótulo) ---------- */
+html,
+body,
+.panels {
+  overflow-x: hidden;
+}
+.tabs {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 2px;
+  padding: 3px;
+}
+.tabs button[hidden] {
+  display: none;
+}
+.tabs button {
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  min-height: 48px;
+  padding: 4px 1px;
+  font-size: 9px;
+  letter-spacing: 0.02em;
+}
+.tabs button span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tabs button svg {
+  width: 20px;
+  height: 20px;
+}
+.tabs button.logtab {
+  color: var(--gold);
+}
