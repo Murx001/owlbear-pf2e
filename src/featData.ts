@@ -56,6 +56,8 @@ export function featCandidates(name: string, kind: FeatKind, level: number, ctx:
     default:
       // características (specials), talentos concedidos etc.
       out.push(
+        // "Blood Fascination" no Pathbuilder é só "blood" no Foundry (pasta da classe).
+        ...(/ fascination$/i.test(sans(name)) ? [`class-features/${cls}/${slugify(sans(name).replace(/ fascination$/i, ""))}`] : []),
         `class-features/${cls}/${slug}`,
         `class-features/${slug}`,
         `ancestry-features/${anc}/${slug}`,
