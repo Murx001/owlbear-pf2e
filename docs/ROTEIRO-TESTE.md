@@ -300,3 +300,6 @@ Ao acabar a condição (tempo contado na aba Combate, ou removida à mão), a **
 ### 40. Lixeira para remover criaturas
 1. No **bestiário (janela grande)**, cada modelo tem um ícone de **lixeira** ao lado de Vincular: remove o modelo do bestiário (pede confirmação). Serve para apagar duplicatas. As criaturas já em jogo continuam.
 2. Em **Mestre > Em jogo**, cada criatura tem uma lixeira no cabeçalho: **desvincula do token e remove** a criatura (pede confirmação).
+
+### 41. Habilidades pelo mesmo sistema dos jogadores
+**Usar** numa habilidade abre a **mesma faixa de alvos** das magias dos jogadores (Posicionar área, Vários alvos, Resolver, Limpar, Cancelar): a área no mapa (visível a todos), a seleção de tokens, a confirmação "Rolar dados" com o contador de bônus e o cartão com o resultado (que aparece para todos). Substitui a lista de alvos própria que a habilidade tinha antes.

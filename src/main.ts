@@ -4,9 +4,10 @@ import "./style.css";
 import "./theme.css";
 import type { Attack, Character, Stat } from "./character";
 import { parseDamage } from "./damage";
-import { creatureAc, getCreature } from "./creatures";
+import { creatureAc, getCreature, type Creature, type CreatureAbility } from "./creatures";
 import { creatureAttackSelection } from "./creatureAttack";
-import { abilitySelection } from "./creatureAbility";
+import { abilityCast } from "./creatureAbility";
+import { CARD_SHARE, type CardData } from "./cardData";
 import {
   COND_BY_KEY,
   CONDITIONS,
@@ -305,6 +306,8 @@ type SpellPending = PendingBase & {
   kind: "spell";
   cast: SpellCast;
   mode: "save" | "auto" | "heal" | "temp";
+  /** Habilidade de criatura: token de quem usa (origem da área) e o cartão aparece para todos. */
+  casterToken?: string;
 };
 type Pending = AttackPending | SpellPending;
 
@@ -435,7 +438,7 @@ async function armArea(free = false) {
   if (pending?.kind !== "spell" || !pending.cast.spell.area) return;
   const msg: AreaArmMsg = {
     area: pending.cast.spell.area,
-    casterTokenId: await casterTokenId(),
+    casterTokenId: pending.casterToken ?? (await casterTokenId()),
     rangeFeet: pending.cast.spell.rangeFeet,
     free,
   };
@@ -515,6 +518,7 @@ const selfIsTarget = () => pending?.kind === "spell" && pending.mode === "temp";
 
 /** Descreve o token como alvo: criatura do mestre ou ficha de jogador (nunca o próprio conjurador). */
 async function describeTarget(tokenId: string, allowSelf = false): Promise<Marked | undefined> {
+  if (!allowSelf && pending?.kind === "spell" && pending.casterToken === tokenId) return undefined;
   const creature = await creatureOfToken(tokenId);
   if (creature) return { tokenId, type: "creature", id: creature.id, name: creature.name };
   const pc = await linkOfToken(tokenId);
@@ -629,7 +633,12 @@ async function resolveSpellOn(p: SpellPending, targets: Marked[]) {
       else offline = true;
     }
 
-    void showCard({ kind: "spell", cast, mode, rolled, results, offline });
+    const card: CardData = { kind: "spell", cast, mode, rolled, results, offline };
+    void showCard(card);
+    if (p.casterToken) {
+      // Habilidade de criatura: o resultado é público (alvos secretos não vazam PV nem CA).
+      void OBR.broadcast.sendMessage(CARD_SHARE, { ...card, sharedBy: "Mestre" }, { destination: "REMOTE" });
+    }
     say(
       offline
         ? "O mestre não respondeu. Ele precisa estar na sala com a extensão ativa."
@@ -663,9 +672,10 @@ async function askSpellTarget(
   cast: SpellCast,
   mode: "save" | "auto" | "heal" | "temp",
   consume: () => void,
+  casterToken?: string,
 ) {
   const startSelection = ((await OBR.player.getSelection()) ?? []).join(",");
-  setTargeting({ kind: "spell", title, cast, mode, startSelection, consume });
+  setTargeting({ kind: "spell", title, cast, mode, startSelection, consume, casterToken });
   if (cast.spell.area) {
     // Magia de área: já entra no modo de vários alvos e pede para posicionar a área no mapa.
     multiMode = true;
@@ -674,9 +684,20 @@ async function askSpellTarget(
   }
 }
 
+/** Mestre: usa uma habilidade da criatura pelo mesmo sistema dos jogadores (alvos no mapa, área, Resolver). */
+async function useCreatureAbility(c: Creature, a: CreatureAbility) {
+  if (!a.save || !a.dc) {
+    say(`${a.name}: cadastre a salvaguarda e a CD para automatizar.`, true);
+    return;
+  }
+  const cast = await abilityCast(c, a);
+  await askSpellTarget(a.name, cast, "save", () => undefined, c.tokenId);
+}
+
 async function onTargetPicked(tokenId: string) {
   const p = pending;
-  if (!p || !current) return;
+  if (!p) return;
+  if (p.kind === "attack" && !current) return;
   // Criatura do mestre: a CA e os PV ficam no navegador do mestre, que resolve o ataque.
   const creature = await creatureOfToken(tokenId);
 
@@ -694,6 +715,7 @@ async function onTargetPicked(tokenId: string) {
     await resolveSpellOn(p, [t]);
     return;
   }
+  if (!current) return;
 
   const link = creature ? undefined : await linkOfToken(tokenId);
   if (!creature) {
@@ -1765,7 +1787,7 @@ OBR.onReady(async () => {
     $("#creatures-tab").hidden = false;
     // Em produção o painel mostra só as criaturas em jogo; os testes de tela podem pedir tudo junto.
     const part = (window as unknown as { __PF2E_PART?: "play" | "all" }).__PF2E_PART ?? "play";
-    creaturesUi = initCreatures($("#gm-creatures"), () => renderMasterHud(), part);
+    creaturesUi = initCreatures($("#gm-creatures"), () => renderMasterHud(), part, (c, a) => void useCreatureAbility(c, a));
     isGmRole = true;
   }
   combatUi = await initCombat($("#tab-combate"), {
@@ -1833,7 +1855,6 @@ OBR.onReady(async () => {
 
     // Mestre: um ataque de criatura espera o token do alvo; essa seleção não abre fichas.
     if (await creatureAttackSelection(player.selection ?? [])) return;
-    if (await abilitySelection(player.selection ?? [])) return;
 
     // Esperando o alvo de um ataque: o próximo token selecionado é o alvo.
     if (pending) {
