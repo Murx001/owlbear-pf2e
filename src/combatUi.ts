@@ -16,6 +16,7 @@ import { COND_BY_KEY, withConditions } from "./conditions";
 import { tickDurations, type DurationHost, type TickEvent } from "./durations";
 import { showCard } from "./cardView";
 import { getCreature, loadCreatures, upsertCreature } from "./creatures";
+import { resetCreatureMaps } from "./creatureAttack";
 import { publishEvent, publishRoll } from "./roll";
 import { loadAllStates, loadState, saveState, type CharState } from "./state";
 
@@ -152,6 +153,7 @@ export async function initCombat(root: HTMLElement, deps: CombatDeps) {
       row.append(
         button(combat.active ? "Próximo turno" : "Iniciar combate", async () => {
           const r = nextTurn(combat);
+          if (r.combat.round !== combat.round || !r.combat.active) resetCreatureMaps();
           await write(r.combat);
           const now = r.combat.list[r.combat.turn];
           await applyTurnEffects(r.combat, r.ended, now);
@@ -169,6 +171,7 @@ export async function initCombat(root: HTMLElement, deps: CombatDeps) {
                   c = r.combat;
                   await applyTurnEffects(c, r.ended, c.list[c.turn]);
                 }
+                resetCreatureMaps();
                 await write(c);
                 const first = c.list[c.turn];
                 await publishEvent(

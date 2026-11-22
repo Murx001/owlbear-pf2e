@@ -38,7 +38,16 @@ import { addCombatant, loadCombat, saveCombat } from "./combat";
 import { COND_BY_KEY } from "./conditions";
 import { durationLabel, pruneDurations } from "./durations";
 import { showCard } from "./cardView";
-import { publishRoll, signed } from "./roll";
+import {
+  attacksMade,
+  beginCreatureAttack,
+  cancelCreatureAttack,
+  creatureAttackActive,
+  creatureMapPenalty,
+  resetCreatureMap,
+} from "./creatureAttack";
+import { parseDamage } from "./damage";
+import { publishRoll, rollDie, signed } from "./roll";
 import {
   CREATURE_KEY,
   creatureOfToken,
@@ -498,6 +507,84 @@ export function initCreatures(root: HTMLElement) {
     return box;
   }
 
+  /* ---------- ataques automáticos da criatura ---------- */
+  const extraByCreature = new Map<string, { extra: string; flank: boolean }>();
+
+  /** Botões de ataque: toca, escolhe o token do alvo no mapa e o sistema rola e aplica o dano. */
+  function attackBlock(c: Creature): HTMLElement {
+    const box = el("div", "visibility");
+    const attacks = c.attacks ?? [];
+    if (attacks.length === 0) return box;
+    const mem = extraByCreature.get(c.id) ?? { extra: "", flank: false };
+    extraByCreature.set(c.id, mem);
+    const n = attacksMade(c.id);
+    const head = el("div", "import");
+    const info = el("span", "sub", `Ataque nº ${n + 1}`);
+    info.style.flex = "1";
+    head.append(
+      info,
+      button("Novo turno", () => {
+        resetCreatureMap(c.id);
+        render();
+      }),
+    );
+    box.append(el("strong", undefined, "Atacar (automático)"), head);
+
+    const opts = el("div", "import");
+    const extra = el("input");
+    extra.type = "number";
+    extra.placeholder = "Bônus";
+    extra.style.width = "70px";
+    extra.value = mem.extra;
+    extra.addEventListener("input", () => (mem.extra = extra.value));
+    const flankLabel = el("label", "flank-option");
+    const flank = el("input");
+    flank.type = "checkbox";
+    flank.checked = mem.flank;
+    flank.addEventListener("change", () => (mem.flank = flank.checked));
+    flankLabel.append(flank, " Alvo flanqueado");
+    opts.append(extra, flankLabel);
+    box.append(opts);
+
+    for (const a of attacks) {
+      const pen = creatureMapPenalty(n, a);
+      const dmg = parseDamage(a.damage);
+      const b = el(
+        "button",
+        undefined,
+        `${a.name} ${signed(a.bonus - pen)}${a.damage ? ` (${a.damage})` : ""}${dmg ? "" : " · dano manual"}`,
+      );
+      b.type = "button";
+      b.addEventListener("click", () => {
+        beginCreatureAttack(
+          c,
+          a,
+          { extra: parseInt(mem.extra, 10) || 0, flanked: mem.flank },
+          (t) => say(t),
+          () => {
+            mem.extra = "";
+            mem.flank = false;
+            render();
+          },
+        );
+        render();
+      });
+      box.append(b);
+    }
+    if (creatureAttackActive(c.id)) {
+      const wait = el("div", "import");
+      wait.append(
+        el("span", "sub", "Selecione no mapa o token do alvo…"),
+        button("Cancelar", () => {
+          cancelCreatureAttack();
+          render();
+        }),
+      );
+      box.append(wait);
+    }
+    return box;
+  }
+
   /* ---------- instância (um token) ---------- */
   const gearOpen = new Set<string>();
 
@@ -629,7 +716,7 @@ export function initCreatures(root: HTMLElement) {
         });
         void showCard({ kind: "check", msg });
         await saveCombat(
-          addCombatant(await loadCombat(), { id: c.id, name: c.name, value: msg.total }),
+          addCombatant(await loadCombat(), { id: c.id, name: publicLink(c).name, value: msg.total }),
         );
       }),
       button("Ver no mapa", async () => {
@@ -651,7 +738,7 @@ export function initCreatures(root: HTMLElement) {
       else openSheets.delete(c.id);
     });
     sheet.append(el("summary", "sub", "Ficha completa"), statBlock(c));
-    li.append(hpRow, actions, sheet);
+    li.append(hpRow, attackBlock(c), actions, sheet);
     return li;
   }
 
@@ -850,6 +937,19 @@ export function initCreatures(root: HTMLElement) {
     const instances = loadCreatures().filter(isInstance).sort(byName);
     const inst = el("section", "block");
     inst.append(el("h4", undefined, `Em jogo (${instances.length})`));
+    if (instances.length > 0) {
+      inst.append(
+        button("Rolar iniciativa de todas", async () => {
+          let combat = await loadCombat();
+          for (const c of instances) {
+            const total = rollDie(20) + creaturePerception(c).value;
+            combat = addCombatant(combat, { id: c.id, name: publicLink(c).name, value: total });
+          }
+          await saveCombat(combat);
+          say(`${instances.length} criatura(s) entraram na iniciativa.`);
+        }),
+      );
+    }
     const iul = el("ul", "creatures");
     if (instances.length === 0) {
       iul.append(el("li", "sub", "Selecione tokens no mapa e use “Vincular” numa criatura do bestiário."));

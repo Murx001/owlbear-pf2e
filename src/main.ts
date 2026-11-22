@@ -3,6 +3,8 @@ import "./tokens.css";
 import "./style.css";
 import "./theme.css";
 import type { Attack, Character, Stat } from "./character";
+import { parseDamage } from "./damage";
+import { creatureAttackSelection } from "./creatureAttack";
 import {
   COND_BY_KEY,
   CONDITIONS,
@@ -807,16 +809,6 @@ function attackButton(
 }
 
 /* ---------- dano personalizado por arma ---------- */
-/** "1d12+5 slashing" -> dados, bônus e tipo. Devolve null se não entender. */
-function parseDamage(text: string): Attack["damage"] | null {
-  const m = /^\s*(\d+)\s*d\s*(\d+)\s*(?:([+-])\s*(\d+))?\s*(.*)$/i.exec(text);
-  if (!m) return null;
-  const dice = parseInt(m[1], 10);
-  const die = parseInt(m[2], 10);
-  if (dice < 1 || dice > 20 || die < 2 || die > 100) return null;
-  return { dice, die, bonus: (m[3] === "-" ? -1 : 1) * (parseInt(m[4] ?? "0", 10) || 0), type: m[5].trim() };
-}
-
 const sheetDamageText = (a: Attack) =>
   `${formulaText(a.damage.dice, a.damage.die, a.damage.bonus)}${a.damage.type ? ` ${a.damage.type}` : ""}`;
 
@@ -1824,6 +1816,9 @@ OBR.onReady(async () => {
     const key = (player.selection ?? []).join(",");
     if (key === lastSelection) return;
     lastSelection = key;
+
+    // Mestre: um ataque de criatura espera o token do alvo; essa seleção não abre fichas.
+    if (await creatureAttackSelection(player.selection ?? [])) return;
 
     // Esperando o alvo de um ataque: o próximo token selecionado é o alvo.
     if (pending) {

@@ -264,3 +264,10 @@ O ícone roxo "Área PF2e" **não fica mais na barra de ferramentas**. Ele apare
 2. **Digite** parte do nome em inglês (ex.: `goblin`, `wolf`, `skeleton guard`): aparece a lista de resultados com o pacote de cada um. **Toque no resultado** para importar (nível, CA, PV, salvaguardas, ataques…). Pode usar várias palavras em qualquer ordem.
 3. O botão "Buscar e adicionar" (nome exato) continua funcionando.
 4. Se o GitHub limitar os pedidos, aparece um aviso para tentar de novo em alguns minutos.
+
+### 34. Ataques automáticos das criaturas (mestre)
+1. Em **Mestre > Em jogo**, cada criatura com ataques tem o bloco **Atacar (automático)**, com um botão por ataque (ex.: "Fangs +19 (2d12+10 piercing)"), o contador **Ataque nº** (com **Novo turno**), um campo de **Bônus** e a caixa **Alvo flanqueado**.
+2. Toque no ataque e **selecione no mapa o token do alvo** (um jogador ou outra criatura), como os jogadores fazem. O sistema rola contra a CA (com condições, flanqueio e penalidade de ataques múltiplos: −5/−10, ou −4/−8 em ataque ágil), **aplica o dano** (PV temporários primeiro) e mostra o cartão **para todos**. A CA e os PV de criaturas continuam secretos nos cartões.
+3. O contador de ataques volta a 1 com **Novo turno**, ou sozinho quando a rodada muda (Próximo turno / Próximo round na aba Combate).
+4. Dano com mais de um dado ("2d6+4 slashing + 1d6 fire") automatiza só o primeiro; dano não lido aparece como "dano manual".
+5. **Rolar iniciativa de todas** (em Em jogo) rola Percepção + d20 de todas as criaturas e as coloca na iniciativa de uma vez. Nos dois casos, o nome na iniciativa respeita a engrenagem (escondido = "Criatura").
