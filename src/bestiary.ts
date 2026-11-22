@@ -87,7 +87,13 @@ const damageText = (rolls: unknown): string =>
 
 const typed = (arr: unknown, withValue: boolean): string[] =>
   (Array.isArray(arr) ? arr : [])
-    .map((x: any) => (withValue && x?.value !== undefined ? `${x.type} ${x.value}` : String(x?.type ?? "")))
+    .map((x: any) => {
+      const ex = (Array.isArray(x?.exceptions) ? x.exceptions : [])
+        .map((e: any) => (typeof e === "string" ? e : String(e?.type ?? "")))
+        .filter(Boolean);
+      const tail = ex.length ? ` (except ${ex.join(", ")})` : "";
+      return withValue && x?.value !== undefined ? `${x.type} ${x.value}${tail}` : String(x?.type ?? "");
+    })
     .filter(Boolean);
 
 /**

@@ -72,6 +72,7 @@ function attackCard(root: HTMLElement, r: AttackResult, nextPenalty: number, onC
     if (d.crit) dmg.append(" × 2 (crítico)");
     dmg.append(" = ", strong(`${d.total}`), d.type ? ` ${d.type}` : "");
     root.append(row("Dano", dmg, "big"));
+    if (d.adjust?.length) root.append(row("Defesas", d.adjust.join("; ")));
     if (d.absorbed > 0) root.append(row("PV temporários", `${d.absorbed} absorvido(s)`));
     if (d.hpText) root.append(row("Resultado", d.hpText));
     if (d.dropped) root.append(row("", `${r.target} caiu!`, "down"));
@@ -153,6 +154,7 @@ function spellCard(
                 }`,
           ),
         );
+        if (d.adjust?.length) box.append(row("Defesas", d.adjust.join("; ")));
         if (d.hpText) box.append(row("Resultado", d.hpText));
         if (d.dropped) box.append(row("", `${r.target} caiu!`, "down"));
       }

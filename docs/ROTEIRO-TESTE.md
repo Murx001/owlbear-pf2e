@@ -303,3 +303,6 @@ Ao acabar a condição (tempo contado na aba Combate, ou removida à mão), a **
 
 ### 41. Habilidades pelo mesmo sistema dos jogadores
 **Usar** numa habilidade abre a **mesma faixa de alvos** das magias dos jogadores (Posicionar área, Vários alvos, Resolver, Limpar, Cancelar): a área no mapa (visível a todos), a seleção de tokens, a confirmação "Rolar dados" com o contador de bônus e o cartão com o resultado (que aparece para todos). Substitui a lista de alvos própria que a habilidade tinha antes.
+
+### 42. Imunidades, fraquezas e resistências
+O dano das criaturas do mestre passa a ser ajustado **por tipo** (ataques, magias de salvaguarda e acerto automático): primeiro os multiplicadores (crítico ×2, salvaguarda básica), depois **imunidade** (zera), **fraqueza** (soma) e **resistência** (subtrai, mínimo 0; só a maior por tipo). "Físico" cobre cortante/perfurante/contundente; "exceto" é respeitado quando é um tipo de dano. Imunidade a acertos críticos devolve o dano crítico ao normal. O cartão mostra a linha **Defesas** (ex.: "resistência fire 5: −5"); para criaturas secretas aparece só "o dano foi ajustado pelas defesas do alvo". Fichas de jogador ainda não têm defesas.

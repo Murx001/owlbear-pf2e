@@ -4,6 +4,7 @@ import {
   creatureAc,
   creatureSave,
   damageCreature,
+  defensesOf,
   getCreature,
   upsertCreature,
   type Creature,
@@ -136,6 +137,8 @@ export async function sendCreatureSpell(
 export function creatureSaveTarget(id: string, fallback: Creature): SaveTarget {
   return {
     name: fallback.name,
+    secret: true,
+    defenses: defensesOf(fallback),
     async saveMod(stat) {
       const c = getCreature(id) ?? fallback;
       return creatureSave(c, stat).value; // já com as condições (Amedrontado, Desajeitado…)
@@ -244,6 +247,7 @@ export async function startGmResolver(onChange: () => void) {
         ac: creatureAc(creature).value, // CA com as condições (Desprevenido, Caído…)
         conditions: creature.conditions,
         secret: true,
+        defenses: defensesOf(creature),
         applyDamage: async (total) => {
           // Relê: a criatura pode ter mudado enquanto os dados rolavam.
           const fresh = getCreature(req.creatureId) ?? creature;

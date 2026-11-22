@@ -1,3 +1,4 @@
+import { adjustDamage, SECRET_ADJUST, type Defenses } from "./defenses";
 import { publishEvent, publishRoll, DEGREE_TEXT, formulaText, type Degree } from "./roll";
 import { applyDamage, loadState, saveState } from "./state";
 
@@ -38,6 +39,8 @@ export interface Target {
   /** Condições do alvo, para o flanqueio não acumular com Desprevenido/Caído. */
   conditions?: Record<string, number>;
   secret: boolean;
+  /** Imunidades, fraquezas e resistências do alvo (ajustam o dano por tipo). */
+  defenses?: Defenses;
   applyDamage(total: number): Promise<DamageResult>;
 }
 
@@ -69,6 +72,8 @@ export interface AttackResult {
     absorbed: number;
     hpText: string | null;
     dropped: boolean;
+    /** Ajustes por imunidade, fraqueza ou resistência. */
+    adjust?: string[];
   };
   /** Ataque de magia ou similar: acertou, mas o dano é rolado à parte. */
   damageNotAutomated?: boolean;
@@ -147,7 +152,9 @@ export async function resolveAgainst(spec: AttackSpec, target: Target): Promise<
     mod: spec.damage.bonus,
     as,
   });
-  const total = crit ? dmg.total * 2 : dmg.total;
+  const multiplied = crit ? dmg.total * 2 : dmg.total;
+  const adj = adjustDamage(multiplied, spec.damage.type, target.defenses, crit);
+  const total = adj.final;
   const r = await target.applyDamage(total);
   result.damage = {
     formula: formulaText(spec.damage.dice, spec.damage.die, spec.damage.bonus),
@@ -158,9 +165,11 @@ export async function resolveAgainst(spec: AttackSpec, target: Target): Promise<
     absorbed: r.absorbed,
     hpText: r.hpText,
     dropped: r.dropped,
+    adjust: adj.changed ? (target.secret ? [SECRET_ADJUST] : adj.notes) : undefined,
   };
 
   const parts = [`${total} de dano${spec.damage.type ? ` ${spec.damage.type}` : ""}`];
+  if (adj.changed) parts.push(target.secret ? SECRET_ADJUST : adj.notes.join("; "));
   if (r.absorbed > 0) parts.push(`${r.absorbed} absorvido(s) pelos PV temporários`);
   const hp = r.hpText ? ` ${r.hpText}.` : "";
   const down = r.dropped ? ` ${target.name} caiu!` : "";

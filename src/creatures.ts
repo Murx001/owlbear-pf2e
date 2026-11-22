@@ -198,6 +198,13 @@ export function removeCreature(id: string) {
   saveCreatures(loadCreatures().filter((c) => c.id !== id));
 }
 
+/** Imunidades, fraquezas e resistências da criatura, para ajustar o dano por tipo. */
+export const defensesOf = (c: Creature) => ({
+  immunities: c.immunities,
+  resistances: c.resistances,
+  weaknesses: c.weaknesses,
+});
+
 /** Aplica dano em uma criatura: PV temporários primeiro. */
 export function damageCreature(c: Creature, damage: number) {
   const absorbed = Math.min(c.temp, damage);

@@ -6,6 +6,7 @@ import { withConditions } from "./conditions";
 import {
   creatureAc,
   damageCreature,
+  defensesOf,
   getCreature,
   publicLink,
   upsertCreature,
@@ -70,6 +71,7 @@ function creatureTarget(id: string): Target | null {
     ac: creatureAc(c).value,
     conditions: c.conditions,
     secret: true,
+    defenses: defensesOf(c),
     applyDamage: async (total) => {
       const fresh = getCreature(id) ?? c;
       const r = damageCreature(fresh, total);

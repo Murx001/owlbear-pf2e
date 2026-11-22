@@ -1,4 +1,5 @@
 import type { DamageResult } from "./attack";
+import { adjustDamage, SECRET_ADJUST, type Defenses } from "./defenses";
 import { degreeOf, DEGREE_TEXT, publishEvent, publishRoll, type Degree } from "./roll";
 import { damageParts, type Outcome, type SaveStat, type SpellCondition, type SpellData } from "./spellData";
 
@@ -21,6 +22,8 @@ export interface SaveTarget {
   name: string;
   /** Alvo secreto (criatura do mestre): o resultado não revela PV. */
   secret?: boolean;
+  /** Imunidades, fraquezas e resistências do alvo. */
+  defenses?: Defenses;
   /** Modificador total da salvaguarda, já com condições. */
   saveMod(stat: SaveStat): Promise<number>;
   applyDamage(total: number): Promise<DamageResult>;
@@ -53,6 +56,8 @@ export interface SpellTargetResult {
     absorbed: number;
     hpText: string | null;
     dropped: boolean;
+    /** Ajustes por imunidade, fraqueza ou resistência. */
+    adjust?: string[];
   };
   healed?: { total: number; hpText: string | null };
   tempGranted?: { amount: number; hpText: string | null };
@@ -155,14 +160,17 @@ function damageNotes(r: DamageResult, targetName: string): string[] {
 /** Magia que acerta automaticamente (ex.: Force Barrage): aplica o dano já rolado. */
 export async function resolveAutoSpell(
   cast: SpellCast,
-  target: Pick<SaveTarget, "name" | "applyDamage">,
+  target: Pick<SaveTarget, "name" | "applyDamage" | "defenses" | "secret">,
   rolled: number | null,
 ): Promise<SpellTargetResult> {
   if (rolled === null) throw new Error(`${cast.spell.name}: dano não automatizado.`);
-  const r = await target.applyDamage(rolled);
+  const adj = adjustDamage(rolled, damageTypes(cast), target.defenses);
+  const r = await target.applyDamage(adj.final);
   const extra = damageNotes(r, target.name);
+  const adjText = adj.changed ? (target.secret ? [SECRET_ADJUST] : adj.notes) : [];
+  extra.unshift(...adjText);
   await publishEvent(
-    `conjurou ${cast.spell.name} em ${target.name} (acerto automático): ${rolled} de dano.${
+    `conjurou ${cast.spell.name} em ${target.name} (acerto automático): ${adj.final} de dano.${
       extra.length ? ` ${extra.join("; ")}.` : ""
     }`,
     asOf(cast),
@@ -172,11 +180,12 @@ export async function resolveAutoSpell(
     damage: {
       rolled,
       multiplier: "",
-      final: rolled,
+      final: adj.final,
       type: damageTypes(cast),
       absorbed: r.absorbed,
       hpText: r.hpText,
       dropped: r.dropped,
+      adjust: adjText.length ? adjText : undefined,
     },
     conditions: [],
     effect: "",
@@ -246,11 +255,13 @@ export async function resolveSaveSpell(
       notes.push("dano não automatizado: role na aba Dados");
       result.notes.push("Dano não automatizado: role na aba Dados.");
     } else {
-      const final = basicMultiplied(rolled, degree);
       const types = damageTypes(cast);
+      const adj = adjustDamage(basicMultiplied(rolled, degree), types, target.defenses);
+      const final = adj.final;
+      const adjText = adj.changed ? (target.secret ? [SECRET_ADJUST] : adj.notes) : [];
       if (final > 0) {
         const r = await target.applyDamage(final);
-        notes.push(`${final} de dano${types ? ` ${types}` : ""}`, ...damageNotes(r, target.name));
+        notes.push(`${final} de dano${types ? ` ${types}` : ""}`, ...adjText, ...damageNotes(r, target.name));
         result.damage = {
           rolled,
           multiplier: MULTIPLIER[degree],
@@ -259,9 +270,10 @@ export async function resolveSaveSpell(
           absorbed: r.absorbed,
           hpText: r.hpText,
           dropped: r.dropped,
+          adjust: adjText.length ? adjText : undefined,
         };
       } else {
-        notes.push("nenhum dano");
+        notes.push("nenhum dano", ...adjText);
         result.damage = {
           rolled,
           multiplier: MULTIPLIER[degree],
@@ -270,6 +282,7 @@ export async function resolveSaveSpell(
           absorbed: 0,
           hpText: null,
           dropped: false,
+          adjust: adjText.length ? adjText : undefined,
         };
       }
     }
