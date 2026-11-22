@@ -35,7 +35,7 @@ import {
   type FoundryEntry,
 } from "./bestiary";
 import { addCombatant, loadCombat, saveCombat } from "./combat";
-import { COND_BY_KEY } from "./conditions";
+import { COND_BY_KEY, CONDITIONS } from "./conditions";
 import { durationLabel, pruneDurations } from "./durations";
 import { showCard } from "./cardView";
 import {
@@ -105,7 +105,7 @@ const byName = (a: Creature, b: Creature) =>
  * separadamente. Os modelos podem ser buscados, filtrados, agrupados em pastas, marcados como
  * favoritos, duplicados e importados do Foundry. Os dados ficam só neste navegador.
  */
-export function initCreatures(root: HTMLElement) {
+export function initCreatures(root: HTMLElement, onRender?: () => void) {
   let editing: Creature | null = null;
   let message = "";
   let showForm = false;
@@ -585,6 +585,65 @@ export function initCreatures(root: HTMLElement) {
     return box;
   }
 
+  /* ---------- condição à mão ---------- */
+  /** O mestre aplica uma condição (e o valor) quando precisa; o valor pode cair 1 por rodada. */
+  function conditionAdder(c: Creature): HTMLElement {
+    const box = el("div", "import wrap");
+    const pick = el("select");
+    for (const d of CONDITIONS) pick.append(new Option(d.pt, d.key));
+    const value = el("input");
+    value.type = "number";
+    value.min = "1";
+    value.value = "1";
+    value.title = "Valor da condição (as sem valor ignoram)";
+    value.style.width = "56px";
+    const rounds = el("input");
+    rounds.type = "number";
+    rounds.min = "1";
+    rounds.placeholder = "rodadas";
+    rounds.title = "Duração em rodadas (opcional)";
+    rounds.style.width = "76px";
+    const decayLabel = el("label", "manual-toggle");
+    const decay = el("input");
+    decay.type = "checkbox";
+    const decayText = el("span", undefined, " Valor −1 por rodada");
+    decayLabel.append(decay, decayText);
+
+    const sync = () => {
+      const def = COND_BY_KEY.get(pick.value);
+      const builtIn = pick.value === "frightened"; // já cai 1 no fim do turno, sozinho
+      value.disabled = !def?.valued;
+      decay.disabled = !def?.valued || builtIn;
+      decay.checked = !!def?.valued && !builtIn;
+      decayText.textContent = builtIn ? " Cai 1 por rodada sozinho" : " Valor −1 por rodada";
+    };
+    pick.addEventListener("change", sync);
+    sync();
+
+    box.append(
+      pick,
+      value,
+      rounds,
+      decayLabel,
+      button("+ Condição", () => {
+        const key = pick.value;
+        const def = COND_BY_KEY.get(key);
+        const v = def?.valued ? Math.max(1, parseInt(value.value, 10) || 1) : 1;
+        const conditions = { ...(c.conditions ?? {}), [key]: Math.max(c.conditions?.[key] ?? 0, v) };
+        const durations = { ...(c.durations ?? {}) };
+        const n = parseInt(rounds.value, 10) || 0;
+        if (def?.valued && decay.checked && !decay.disabled) {
+          durations[key] = { mode: "decay", remaining: 0, text: "−1 por rodada" };
+        } else if (n > 0) {
+          durations[key] = { mode: "self-start", remaining: n, text: `${n} rodada${n > 1 ? "s" : ""}` };
+        } else delete durations[key];
+        upsertCreature({ ...c, conditions, durations: Object.keys(durations).length > 0 ? durations : undefined });
+        render();
+      }),
+    );
+    return box;
+  }
+
   /* ---------- instância (um token) ---------- */
   const gearOpen = new Set<string>();
 
@@ -676,6 +735,8 @@ export function initCreatures(root: HTMLElement) {
       }
       li.append(chips);
     }
+
+    li.append(conditionAdder(c));
 
     const amount = el("input");
     amount.type = "number";
@@ -959,6 +1020,7 @@ export function initCreatures(root: HTMLElement) {
     inst.append(orphanNotice());
 
     root.append(inst, backupSection());
+    onRender?.();
   }
 
   /** Tocou no token de uma criatura: abre a ficha dela e rola até o cartão, com destaque. */

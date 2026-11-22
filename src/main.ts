@@ -4,6 +4,7 @@ import "./style.css";
 import "./theme.css";
 import type { Attack, Character, Stat } from "./character";
 import { parseDamage } from "./damage";
+import { creatureAc, getCreature } from "./creatures";
 import { creatureAttackSelection } from "./creatureAttack";
 import {
   COND_BY_KEY,
@@ -156,7 +157,15 @@ $("#log-toggle").addEventListener("click", () => {
 const TABS = ["agir", "testes", "ficha", "combate", "criaturas"] as const;
 type TabName = (typeof TABS)[number];
 
+/** Aba aberta e, no mestre, a criatura em foco (a que ele tocou no mapa). */
+let activeTab: TabName = "agir";
+let focusedCreatureId: string | null = null;
+
 function switchTab(name: TabName) {
+  activeTab = name;
+  if (name !== "criaturas") focusedCreatureId = null;
+  if (current) renderHud(current);
+  else renderMasterHud();
   app.querySelectorAll<HTMLButtonElement>(".tabs button").forEach((x) => {
     x.classList.toggle("active", x.dataset.tab === name);
   });
@@ -1259,8 +1268,55 @@ function extraField(): HTMLElement {
   return label;
 }
 
+/**
+ * Na aba Mestre o cabeçalho da ficha do mestre só atrapalha: some, e mostra nome, PV e CA apenas da
+ * criatura em foco (a que ele tocou no mapa).
+ */
+function renderMasterHud() {
+  hudEl.replaceChildren();
+  const c = focusedCreatureId ? getCreature(focusedCreatureId) : undefined;
+  if (activeTab !== "criaturas" || !c) {
+    hudEl.hidden = activeTab === "criaturas";
+    return;
+  }
+  const ac = creatureAc(c);
+  const who = el("div", "hud-name");
+  who.append(el("strong", undefined, c.name), el("span", "sub", c.level !== undefined ? `Nível ${c.level}` : "Criatura"));
+  const mid = el("div", "hud-hp");
+  mid.append(el("span", undefined, `${c.hp}/${c.hpMax} PV${c.temp ? ` (+${c.temp})` : ""}`));
+  const scale = Math.max(c.hpMax, c.hp + c.temp);
+  const bar = el("div", "hp-bar");
+  const fill = el("div", "hp-fill");
+  fill.style.width = `${(Math.min(c.hp, c.hpMax) / scale) * 100}%`;
+  bar.append(fill);
+  if (c.temp > 0) {
+    const t = el("div", "hp-temp");
+    t.style.width = `${(c.temp / scale) * 100}%`;
+    bar.append(t);
+  }
+  mid.append(bar);
+  const acBox = el("div", `hud-ac${ac.penalty > ac.bonus ? " penalized" : ""}`);
+  acBox.append(el("strong", undefined, String(ac.value)), el("span", undefined, "CA"));
+  const top = el("div", "hud-top");
+  top.append(who, mid, acBox);
+  hudEl.append(top);
+  const tags = condTags(c.conditions, c.durations);
+  if (tags.length > 0) {
+    const row = el("div", "hud-tags");
+    for (const t of tags.slice(0, 4)) {
+      const chip = el("span", "hud-tag", t.text);
+      chip.style.background = t.color;
+      row.append(chip);
+    }
+    if (tags.length > 4) row.append(el("span", "hud-tag", `+${tags.length - 4}`));
+    hudEl.append(row);
+  }
+  hudEl.hidden = false;
+}
+
 /** Cabeçalho fixo, visível em todas as abas: nome, PV, CA e condições. Tocar leva à aba Ficha. */
 function renderHud(c: Character) {
+  if (activeTab === "criaturas") return renderMasterHud();
   hudEl.replaceChildren();
   const max = maxHp(c);
   const hp = Math.min(state.hp, max);
@@ -1303,7 +1359,9 @@ function renderHud(c: Character) {
   }
   hudEl.hidden = false;
 }
-hudEl.addEventListener("click", () => switchTab("ficha"));
+hudEl.addEventListener("click", () => {
+  if (activeTab !== "criaturas") switchTab("ficha");
+});
 
 function renderSheet(c: Character) {
   current = c;
@@ -1751,7 +1809,7 @@ OBR.onReady(async () => {
   // Aba de criaturas: só o mestre vê (os dados ficam no navegador dele).
   if ((await OBR.player.getRole()) === "GM") {
     $("#creatures-tab").hidden = false;
-    creaturesUi = initCreatures($("#gm-creatures"));
+    creaturesUi = initCreatures($("#gm-creatures"), () => renderMasterHud());
     isGmRole = true;
   }
   combatUi = await initCombat($("#tab-combate"), {
@@ -1842,6 +1900,7 @@ OBR.onReady(async () => {
       const creature = await creatureOfToken(picked[0]);
       if (creature) {
         switchTab("criaturas");
+        focusedCreatureId = creature.id;
         creaturesUi?.focus(creature.id);
       }
     }

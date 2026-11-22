@@ -15,11 +15,13 @@ export type DurMode =
   /** Acaba no fim do turno de quem sofre o efeito ("até o fim do próximo turno dele"). */
   | "self-end"
   /** Não contamos (horas, descanso): só aparece como rótulo. */
-  | "none";
+  | "none"
+  /** Condição com valor que cai 1 no fim de cada turno de quem sofre (aplicada à mão pelo mestre). */
+  | "decay";
 
 /** O que o texto da magia diz, antes de saber quem lançou. */
 export interface DurationSpec {
-  mode: Exclude<DurMode, "self-start">;
+  mode: Exclude<DurMode, "self-start" | "decay">;
   rounds: number;
   /** Texto curto em PT-BR para mostrar ("1 rodada", "1 minuto"). */
   text: string;
@@ -161,6 +163,7 @@ export function pruneDurations(
 export function durationLabel(d: ConditionDuration | undefined): string {
   if (!d) return "";
   if (d.mode === "none") return d.text;
+  if (d.mode === "decay") return "−1/rd";
   return `${d.remaining} rd`;
 }
 
@@ -197,14 +200,39 @@ export function tickDurations(
 ): TickResult[] {
   const results: TickResult[] = [];
   for (const h of hosts) {
-    if (!h.durations) continue;
-    const durations: Durations = { ...h.durations };
+    if (!h.durations && !((h.conditions.stunned ?? 0) > 0 && ev.type === "start")) continue;
+    const durations: Durations = { ...(h.durations ?? {}) };
     const conditions = { ...h.conditions };
     const expired: string[] = [];
     let changed = false;
 
-    for (const [key, d] of Object.entries(h.durations)) {
+    // Atordoado (regra do PF2e): no início do turno de quem sofre, perde ações iguais ao valor
+    // (no máximo 3) e o valor cai nessa quantidade.
+    if (ev.type === "start" && h.id === ev.id && (conditions.stunned ?? 0) > 0) {
+      const next = conditions.stunned - 3;
+      changed = true;
+      if (next <= 0) {
+        delete conditions.stunned;
+        delete durations.stunned;
+        expired.push("stunned");
+      } else conditions.stunned = next;
+    }
+
+    for (const [key, d] of Object.entries(h.durations ?? {})) {
       if (d.mode === "none") continue;
+      if (d.mode === "decay") {
+        // Valor que cai 1 por rodada: no fim do turno de quem sofre.
+        if (ev.type === "end" && h.id === ev.id) {
+          const next = (conditions[key] ?? 0) - 1;
+          changed = true;
+          if (next <= 0) {
+            delete durations[key];
+            delete conditions[key];
+            expired.push(key);
+          } else conditions[key] = next;
+        }
+        continue;
+      }
       let counts = false;
       if (ev.type === "start") {
         if (d.mode === "source-start") {

@@ -36,6 +36,13 @@ export const CONDITIONS: CondDef[] = [
   { key: "unconscious", pt: "Inconsciente", valued: false },
   { key: "fleeing", pt: "Fugindo", valued: false },
   { key: "confused", pt: "Confuso", valued: false },
+  { key: "petrified", pt: "Petrificado", valued: false },
+  { key: "quickened", pt: "Acelerado", valued: false },
+  { key: "controlled", pt: "Controlado", valued: false },
+  { key: "encumbered", pt: "Sobrecarregado", valued: false },
+  { key: "undetected", pt: "Não detectado", valued: false },
+  { key: "unnoticed", pt: "Despercebido", valued: false },
+  { key: "persistent-damage", pt: "Dano persistente", valued: true },
   /* Bônus de CA (circunstância): o valor é o bônus. Não acumulam entre si, vale o maior. */
   { key: "shield-raised", pt: "Escudo erguido", valued: true },
   { key: "shield-spell", pt: "Magia Escudo", valued: false },
@@ -90,10 +97,10 @@ export function hpMaxWithConditions(hpMax: number, level: number, c: Conditions)
 /* ---------- tags de condição (sobre o token) ---------- */
 const GROUPS: [color: string, keys: string[]][] = [
   ["#c2693a", ["frightened", "sickened", "clumsy", "enfeebled", "stupefied", "drained", "fatigued", "off-guard", "prone"]],
-  ["#7c6bd6", ["slowed", "stunned", "paralyzed", "unconscious", "immobilized", "restrained", "grabbed", "fleeing", "confused"]],
-  ["#b23a48", ["dying", "wounded", "doomed"]],
+  ["#7c6bd6", ["slowed", "stunned", "paralyzed", "unconscious", "immobilized", "restrained", "grabbed", "fleeing", "confused", "petrified", "controlled", "quickened", "encumbered"]],
+  ["#b23a48", ["dying", "wounded", "doomed", "persistent-damage"]],
   ["#3f8f6b", ["shield-raised", "shield-spell"]],
-  ["#3d7ca8", ["blinded", "dazzled", "deafened", "concealed", "hidden", "invisible"]],
+  ["#3d7ca8", ["blinded", "dazzled", "deafened", "concealed", "hidden", "invisible", "undetected", "unnoticed"]],
 ];
 
 export interface ConditionTag {

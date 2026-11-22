@@ -271,3 +271,9 @@ O ícone roxo "Área PF2e" **não fica mais na barra de ferramentas**. Ele apare
 3. O contador de ataques volta a 1 com **Novo turno**, ou sozinho quando a rodada muda (Próximo turno / Próximo round na aba Combate).
 4. Dano com mais de um dado ("2d6+4 slashing + 1d6 fire") automatiza só o primeiro; dano não lido aparece como "dano manual".
 5. **Rolar iniciativa de todas** (em Em jogo) rola Percepção + d20 de todas as criaturas e as coloca na iniciativa de uma vez. Nos dois casos, o nome na iniciativa respeita a engrenagem (escondido = "Criatura").
+
+### 35. Cabeçalho da aba Mestre e condições à mão
+1. Na aba **Mestre**, o cabeçalho da ficha do mestre (nome, PV, CA) **some**, ganhando espaço. Ao tocar num token de criatura, o cabeçalho passa a mostrar **só a criatura em foco** (nome, PV, CA e condições). Ao sair da aba, volta o cabeçalho da ficha.
+2. Em cada criatura de **Em jogo**, a linha **[condição] [valor] [rodadas] [Valor −1 por rodada] + Condição** aplica uma condição à mão. Com **rodadas**, ela acaba sozinha depois desse tempo (contado no início do turno de quem sofre). Com **Valor −1 por rodada**, o valor cai 1 no fim do turno dele até acabar (aparece "−1/rd"). **Amedrontado** já cai 1 por turno sozinho.
+3. **Atordoado** segue a regra do PF2e: no início do turno de quem sofre, o valor cai pela quantidade de ações perdidas (até 3) e acaba.
+4. Entraram condições que faltavam: Petrificado, Acelerado, Controlado, Sobrecarregado, Não detectado, Despercebido e Dano persistente. A contagem funciona para quem está na iniciativa (criaturas entram com **Iniciativa** ou **Rolar iniciativa de todas**).
