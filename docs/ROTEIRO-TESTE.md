@@ -233,3 +233,6 @@ Confira nos dois painéis e nos cartões: fundo escuro com detalhes dourados, t�
 4. **Truque Escudo (Shield):** ao lançar (Linari tem preparado), a CA sobe **+1** até o início do seu próximo turno. Bônus de circunstância **não acumulam**: com o escudo erguido (+2) e a magia (+1) vale o maior (+2).
 5. Condições continuam mexendo na CA: Desprevenido/Caído −2 (circunstância, soma com o bônus do escudo), Amedrontado/Fatigado (status).
 6. Um ataque contra o personagem usa a CA **já com** o escudo.
+
+### 27. Alcance das áreas (emanação e explosão)
+Na grade, uma **emanação de 10 pés** cobre **2 casas** em volta do conjurador (um quadrado); a 3ª casa fica de fora. Teste com a Necrotic Bomb: um token **colado** (5 pés) e um a **2 casas** (10 pés) são atingidos; a **3ª casa** (15 pés) e a diagonal da 3ª casa **não**. O conjurador não é atingido. Uma **explosão de 20 pés** cobre 4 casas a partir do centro; a 5ª fica de fora.

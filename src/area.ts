@@ -133,6 +133,8 @@ function direction(pl: Placement): { apex: Pt; dir: Pt } | null {
   return { apex, dir: { x: dx / len, y: dy / len } };
 }
 
+/** Folga (px) para erros de arredondamento ao comparar com a borda da área. */
+const EDGE = 0.5;
 const LINE_WIDTH_FEET = 5;
 const CONE_HALF = Math.PI / 4; // cone de 90°
 
@@ -197,10 +199,18 @@ function samples(r: Rect): Pt[] {
 export function hits(pl: Placement, token: Rect): boolean {
   const R = pl.area.feet * pl.ppf;
   switch (pl.area.kind) {
+    // Tocar só a borda não conta: um token que começa exatamente a R pés está fora da área
+    // (na grade, a área de 10 pés cobre 2 casas; a 3ª casa já é de fora).
     case "burst":
-      return distPointRect(pl.pointer, token) <= R;
-    case "emanation":
-      return pl.caster ? distRects(pl.caster, token) <= R : false;
+      return distPointRect(pl.pointer, token) < R - EDGE;
+    case "emanation": {
+      if (!pl.caster) return false;
+      // A emanação é um quadrado em volta do conjurador (mesma forma que se desenha), não um círculo.
+      const c = pl.caster;
+      const gapX = Math.max(c.x - (token.x + token.w), 0, token.x - (c.x + c.w));
+      const gapY = Math.max(c.y - (token.y + token.h), 0, token.y - (c.y + c.h));
+      return Math.max(gapX, gapY) < R - EDGE;
+    }
     case "cone": {
       const d = direction(pl);
       if (!d) return false;
