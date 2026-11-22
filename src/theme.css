@@ -634,3 +634,20 @@ button.gear {
   margin-left: 0;
   align-self: stretch;
 }
+
+/* resultados da pesquisa de criaturas do Foundry */
+.import-results {
+  display: grid;
+  gap: 4px;
+  max-height: 240px;
+  overflow-y: auto;
+  margin-top: 6px;
+}
+.import-results button.result {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  text-align: left;
+  justify-content: flex-start;
+  padding: 6px 10px;
+}

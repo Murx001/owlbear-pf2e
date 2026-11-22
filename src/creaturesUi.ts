@@ -28,7 +28,11 @@ import {
   filterTemplates,
   findFoundryCreature,
   groupOf,
+  importFoundryEntry,
+  loadFoundryIndex,
+  searchFoundry,
   type BestiaryFilter,
+  type FoundryEntry,
 } from "./bestiary";
 import { addCombatant, loadCombat, saveCombat } from "./combat";
 import { COND_BY_KEY } from "./conditions";
@@ -202,7 +206,7 @@ export function initCreatures(root: HTMLElement) {
       el(
         "p",
         "sub",
-        "Digite o nome em inglês, como no Archives of Nethys (ex.: Goblin Warrior, Skeleton Guard). Traz nível, CA, PV, salvaguardas, Percepção, traços, ataques e defesas.",
+        "Pesquise pelo nome em inglês (ex.: goblin, skeleton, wolf) e toque no resultado para adicionar. Traz nível, CA, PV, salvaguardas, Percepção, traços, ataques e defesas.",
       ),
     );
     const name = el("input");
@@ -230,6 +234,50 @@ export function initCreatures(root: HTMLElement) {
     const row = el("div", "import");
     row.append(name, go);
     box.append(row);
+
+    // Pesquisa: ao digitar, lista as criaturas dos pacotes (a lista é baixada uma vez e guardada).
+    const results = el("div", "import-results");
+    const hint = el("p", "sub", "Carregando a lista de criaturas do Foundry…");
+    results.append(hint);
+    box.append(results);
+    let index: FoundryEntry[] | null = null;
+    const show = () => {
+      results.replaceChildren();
+      const q = name.value.trim();
+      if (!index) return results.append(hint);
+      if (!q) return results.append(el("p", "sub", `${index.length} criaturas disponíveis. Digite para pesquisar (em inglês).`));
+      const found = searchFoundry(index, q);
+      if (found.length === 0) return results.append(el("p", "sub", "Nada encontrado. Tente outra palavra (em inglês)."));
+      for (const e of found) {
+        const b = el("button", "result");
+        b.type = "button";
+        b.append(el("strong", undefined, e.name), el("span", "sub", ` · ${e.label}`));
+        b.addEventListener("click", async () => {
+          b.disabled = true;
+          try {
+            const c = await importFoundryEntry(e, () => `cr-${crypto.randomUUID()}`);
+            upsertCreature(c);
+            openCards.add(c.id);
+            showImport = false;
+            say(`${c.name} importado (${e.label}): nível ${c.level}, CA ${c.ac}, PV ${c.hpMax}. Pasta: ${c.group}.`);
+          } catch (err) {
+            b.disabled = false;
+            say(err instanceof Error ? err.message : "Não foi possível importar.");
+          }
+        });
+        results.append(b);
+      }
+    };
+    name.addEventListener("input", show);
+    loadFoundryIndex().then(
+      (list) => {
+        index = list;
+        show();
+      },
+      (err) => {
+        hint.textContent = err instanceof Error ? err.message : "Não foi possível carregar a lista.";
+      },
+    );
     return box;
   }
 

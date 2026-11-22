@@ -258,3 +258,9 @@ Na grade, uma **emanação de 10 pés** cobre **2 casas** em volta do conjurador
 
 ### 32. Ícone da ferramenta de área
 O ícone roxo "Área PF2e" **não fica mais na barra de ferramentas**. Ele aparece só enquanto você posiciona uma área de magia (cone, explosão, linha) e some quando a área é posicionada, cancelada (Esc) ou resolvida. O posicionamento funciona igual: clique no mapa, fora do alcance fica vermelho, Esc cancela.
+
+### 33. Pesquisar criaturas do Foundry (mestre)
+1. Aba **Mestre > Importar do Foundry**: ao abrir, a extensão baixa **uma vez** a lista de criaturas dos pacotes (Monster Core, Bestiários 1 a 3, NPC Core, etc.) e guarda por 7 dias. Na primeira vez pode levar alguns segundos.
+2. **Digite** parte do nome em inglês (ex.: `goblin`, `wolf`, `skeleton guard`): aparece a lista de resultados com o pacote de cada um. **Toque no resultado** para importar (nível, CA, PV, salvaguardas, ataques…). Pode usar várias palavras em qualquer ordem.
+3. O botão "Buscar e adicionar" (nome exato) continua funcionando.
+4. Se o GitHub limitar os pedidos, aparece um aviso para tentar de novo em alguns minutos.

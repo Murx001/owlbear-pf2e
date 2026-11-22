@@ -154,3 +154,83 @@ export async function findFoundryCreature(
   }
   return null;
 }
+
+/* ---------- pesquisa nos pacotes do Foundry ---------- */
+export interface FoundryEntry {
+  slug: string;
+  /** Nome aproximado, a partir do nome do arquivo ("goblin-warrior" -> "Goblin Warrior"). */
+  name: string;
+  dir: string;
+  label: string;
+}
+
+const INDEX_KEY = "pf2e.foundryIndex.v1";
+const INDEX_TTL = 7 * 24 * 60 * 60 * 1000;
+const API = "https://api.github.com/repos/foundryvtt/pf2e/contents/packs/pf2e";
+
+const titleCase = (slug: string) =>
+  slug
+    .split("-")
+    .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(" ");
+
+/**
+ * Lista de criaturas dos pacotes (um pedido por pacote à API do GitHub). Fica guardada por 7 dias
+ * no navegador, então só o primeiro uso baixa a lista.
+ */
+export async function loadFoundryIndex(): Promise<FoundryEntry[]> {
+  try {
+    const cached = JSON.parse(localStorage.getItem(INDEX_KEY) ?? "null") as { at: number; list: FoundryEntry[] } | null;
+    if (cached && Array.isArray(cached.list) && cached.list.length > 0 && Date.now() - cached.at < INDEX_TTL) {
+      return cached.list;
+    }
+  } catch {
+    /* sem cache */
+  }
+  const lists = await Promise.all(
+    PACKS.map(async (p) => {
+      const res = await fetch(`${API}/${p.dir}`);
+      if (!res.ok) {
+        throw new Error(
+          res.status === 403
+            ? "O GitHub limitou os pedidos por agora. Tente de novo daqui a alguns minutos."
+            : `Não foi possível ler a lista do pacote ${p.label} (erro ${res.status}).`,
+        );
+      }
+      const files = (await res.json()) as { name: string }[];
+      return files
+        .filter((f) => f.name.endsWith(".json") && !f.name.startsWith("_"))
+        .map((f): FoundryEntry => {
+          const slug = f.name.replace(/\.json$/, "");
+          return { slug, name: titleCase(slug), dir: p.dir, label: p.label };
+        });
+    }),
+  );
+  const list = lists.flat();
+  try {
+    localStorage.setItem(INDEX_KEY, JSON.stringify({ at: Date.now(), list }));
+  } catch {
+    /* guarda só na memória desta vez */
+  }
+  return list;
+}
+
+/** Procura por palavras (todas precisam aparecer no nome). Nome que começa com a busca vem primeiro. */
+export function searchFoundry(list: FoundryEntry[], query: string, limit = 40): FoundryEntry[] {
+  const words = query
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
+  if (words.length === 0) return [];
+  const hits = list.filter((e) => words.every((w) => e.slug.includes(w)));
+  const q = slugify(query);
+  hits.sort((a, b) => Number(b.slug.startsWith(q)) - Number(a.slug.startsWith(q)) || a.name.localeCompare(b.name));
+  return hits.slice(0, limit);
+}
+
+/** Baixa e converte a criatura escolhida na lista. */
+export async function importFoundryEntry(e: FoundryEntry, newId: () => string): Promise<Creature> {
+  const res = await fetch(`${RAW}/${e.dir}/${e.slug}.json`);
+  if (!res.ok) throw new Error(`Não foi possível baixar ${e.name} (erro ${res.status}).`);
+  return foundryToCreature(await res.json(), newId(), e.label, e.dir);
+}
