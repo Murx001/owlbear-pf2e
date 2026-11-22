@@ -5,7 +5,7 @@ import "./theme.css";
 import type { Attack, Character, Stat } from "./character";
 import { parseDamage } from "./damage";
 import { creatureAc, getCreature, type Creature, type CreatureAbility } from "./creatures";
-import { creatureAttackSelection, setCreatureConfirm } from "./creatureAttack";
+import { cancelCreatureAttack, creatureAttackSelection, setCreatureConfirm, watchCreatureAttack } from "./creatureAttack";
 import { abilityCast } from "./creatureAbility";
 import { CARD_SHARE, type CardData } from "./cardData";
 import { aonSearch, fetchFeat } from "./featData";
@@ -456,12 +456,25 @@ const clearArea = () => void OBR.broadcast.sendMessage(AREA_CLEAR, {}, { destina
 
 const isSpellWithRange = (p: Pending) => p.kind === "spell" && p.cast.spell.rangeFeet !== undefined;
 
+/** Ataque de criatura esperando o alvo: usa a mesma faixa dos ataques dos jogadores. */
+let creatureBanner: string | null = null;
+watchCreatureAttack((title) => {
+  creatureBanner = title;
+  updateBanner();
+});
+
 function updateBanner() {
   const p = pending;
-  targetingEl.hidden = p === null;
+  targetingEl.hidden = p === null && creatureBanner === null;
   noteEl.hidden = p === null || bannerNote === "";
   noteEl.textContent = bannerNote;
-  if (!p) return;
+  if (!p) {
+    if (creatureBanner !== null) {
+      for (const b of [multiBtn, areaBtn, handBtn, resolveBtn, clearBtn]) b.hidden = true;
+      targetingEl.querySelector("span")!.textContent = `${creatureBanner}: selecione o token do alvo no mapa.`;
+    }
+    return;
+  }
   const isSpell = p.kind === "spell";
   const area = isSpell ? p.cast.spell.area : undefined;
   multiBtn.hidden = !isSpell;
@@ -516,6 +529,7 @@ handBtn.addEventListener("click", () => {
 });
 
 function cancelTargeting() {
+  if (creatureBanner !== null) cancelCreatureAttack();
   setTargeting(null);
   say("Cancelado.");
 }
@@ -533,7 +547,7 @@ resolveBtn.addEventListener("click", () => {
   if (pending?.kind === "spell" && marked.length > 0) void resolveSpellOn(pending, marked);
 });
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && pending) cancelTargeting();
+  if (e.key === "Escape" && (pending || creatureBanner !== null)) cancelTargeting();
 });
 
 /** Magias de PV temporários podem ser lançadas em si mesmo. */

@@ -327,3 +327,6 @@ Na faixa de alvos de uma magia (ou habilidade de criatura) **com área**, o bot�
 
 ### 49. Ataques das criaturas com a tela "deseja rolar os dados?"
 Ao escolher o alvo de um ataque de criatura (Mestre > Ataques), aparece a **mesma tela de confirmação** dos jogadores: alvo, bônus do ataque, **Ataque nº N: MAP … · o próximo terá …**, dano, o contador **Bônus nesta rolagem**, **Inimigo flanqueado** e **MAP normal / Sem MAP / Conta como 2 ataques**. **Cancelar** mantém o ataque esperando outro alvo. Os campos antigos "Bônus" e "Alvo flanqueado" do bloco de ataques foram removidos (agora ficam nessa tela).
+
+### 50. Ataques de criaturas iguais aos dos jogadores
+Em Mestre > cada criatura > **Ataques**, cada ataque tem a mesma linha da ficha do jogador: nome + botão **Ataque +X** (já com o MAP da criatura) + botão **Dano XdY** (rola só o dano). **Ataque** mostra a **mesma faixa de alvo** dos jogadores ("…: selecione o token do alvo no mapa" com **Cancelar**; Esc também cancela), depois a tela "deseja rolar os dados?". Magias de área e habilidades de criatura já usavam a mesma faixa, com **Alvos à mão**.

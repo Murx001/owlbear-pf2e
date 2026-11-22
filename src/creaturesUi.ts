@@ -51,7 +51,7 @@ import {
 } from "./creatureAttack";
 import { parseDamage } from "./damage";
 import { abilityLabel } from "./creatureAbility";
-import { publishRoll, rollDie, signed } from "./roll";
+import { formulaText, publishRoll, rollDie, signed } from "./roll";
 import {
   CREATURE_KEY,
   creatureOfToken,
@@ -688,25 +688,27 @@ export function initCreatures(
     for (const a of attacks) {
       const pen = creatureMapPenalty(n, a);
       const dmg = parseDamage(a.damage);
-      const b = el(
-        "button",
-        undefined,
-        `${a.name} ${signed(a.bonus - pen)}${a.damage ? ` (${a.damage})` : ""}${dmg ? "" : " · dano manual"}`,
-      );
-      b.type = "button";
-      b.addEventListener("click", () => {
-        beginCreatureAttack(
-          c,
-          a,
-          { extra: 0, flanked: false },
-          (t) => say(t),
-          () => {
-            render();
-          },
-        );
+      const row = el("div", "attack");
+      row.append(el("span", "aname", a.name));
+      const atk = el("button", "stat");
+      atk.type = "button";
+      atk.append(el("span", "lbl", "Ataque"), el("span", "n", signed(a.bonus - pen)));
+      atk.title = "Escolha o alvo no mapa; o sistema pergunta, rola contra a CA e aplica o dano";
+      atk.addEventListener("click", () => {
+        beginCreatureAttack(c, a, { extra: 0, flanked: false }, (t) => say(t), () => render());
         render();
       });
-      box.append(b);
+      const hit = el("button", "stat");
+      hit.type = "button";
+      hit.append(el("span", "lbl", "Dano"), el("span", "n", dmg ? formulaText(dmg.dice, dmg.die, dmg.bonus) : a.damage || "—"));
+      hit.title = dmg ? "Rola só o dano (sem alvo)" : "Dano não lido: role à mão";
+      hit.disabled = !dmg;
+      hit.addEventListener("click", () => {
+        if (!dmg) return;
+        void publishRoll({ title: `${a.name} (dano)`, count: dmg.dice, sides: dmg.die, mod: dmg.bonus });
+      });
+      row.append(atk, hit);
+      box.append(row);
     }
     if (creatureAttackActive(c.id)) {
       const wait = el("div", "import");
