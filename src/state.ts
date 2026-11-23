@@ -1,6 +1,7 @@
 import OBR from "@owlbear-rodeo/sdk";
 import { acWithConditions, hpMaxWithConditions, type Conditions } from "./conditions";
 import type { Durations } from "./durations";
+import { hitWhileDown, settle } from "./dying";
 
 /** Estado vivo de cada ficha, guardado nos metadados da sala (compartilhado com todos). */
 const KEY = "com.owlbear-pf2e/state";
@@ -27,6 +28,10 @@ export interface CharState {
   dmg?: Record<string, { modes: { label: string; formula: string }[]; active: number }>;
   /** Quanto tempo falta para cada condição acabar (só as que têm duração contada). */
   durations?: Durations;
+  /** Estabilizado: 0 PV, inconsciente, sem Morrendo (até receber dano ou ser curado). */
+  stable?: boolean;
+  /** Chegou ao limite de Morrendo. */
+  dead?: boolean;
 }
 
 export type All = Record<string, CharState>;
@@ -42,12 +47,11 @@ export function applyDamage(st: CharState, damage: number) {
   const hp = Math.min(st.hp, max);
   const absorbed = Math.min(st.temp, damage);
   const toHp = Math.min(hp, damage - absorbed);
-  return {
-    state: { ...st, temp: st.temp - absorbed, hp: hp - toHp },
-    absorbed,
-    toHp,
-    dropped: hp > 0 && hp - toHp === 0,
-  };
+  let next: CharState = { ...st, temp: st.temp - absorbed, hp: hp - toHp };
+  // Já a 0 PV e ainda levou dano: Morrendo sobe (ou volta, se estava estabilizado).
+  if (hp === 0 && damage > absorbed) next = hitWhileDown(next);
+  else next = settle(next, hp);
+  return { state: next, absorbed, toHp, dropped: hp > 0 && hp - toHp === 0 };
 }
 
 export async function loadAllStates(): Promise<All> {
@@ -63,6 +67,10 @@ export async function loadState(id: string): Promise<CharState | undefined> {
  * condição some (acabou o tempo, foi removida), o que ela mudava na ficha e no token some junto.
  */
 export function derive(st: CharState): CharState {
+  return settle(deriveNumbers(st));
+}
+
+function deriveNumbers(st: CharState): CharState {
   if (st.baseAc === undefined && (st.baseMax === undefined || st.level === undefined)) return st;
   const next = { ...st };
   if (st.baseAc !== undefined) next.ac = acWithConditions(st.baseAc, st.conditions).value;

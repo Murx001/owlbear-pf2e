@@ -20,6 +20,7 @@ import {
 } from "./conditions";
 import { durationLabel, pruneDurations, type Durations } from "./durations";
 import { loadState, onStateChange, saveState, type CharState } from "./state";
+import { applyRecovery, deathLimit, hitWhileDown, recoveryDc, settle, stabilize } from "./dying";
 import { CAST_REQ, type CastAction } from "./cardData";
 import { showCard } from "./cardView";
 import { tokenDistanceFeet } from "./grid";
@@ -112,6 +113,7 @@ app.innerHTML = `
       <div id="sheet-ficha"></div>
     </section>
     <section id="tab-combate" hidden></section>
+    <section id="tab-morrendo" hidden></section>
     <section id="tab-criaturas" hidden>
       <div id="gm-creatures"></div>
     </section>
@@ -137,6 +139,7 @@ app.innerHTML = `
     <button data-tab="testes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 20.5 7.5v9L12 21.5 3.5 16.5v-9zM12 2.5v19M3.5 7.5 20.5 16.5M20.5 7.5 3.5 16.5"/></svg><span>Testes</span></button>
     <button data-tab="ficha"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h11a2 2 0 0 1 2 2V20H8a2 2 0 0 1-2-2zM6 18a2 2 0 0 0 2 2M10 8.5h6M10 12.5h6"/></svg><span>Ficha</span></button>
     <button data-tab="combate"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h10M7 20.5h10M8 3.5v4l4 4.5-4 4.5v4M16 3.5v4l-4 4.5 4 4.5v4"/></svg><span>Combate</span></button>
+    <button data-tab="morrendo" id="dying-tab" class="dying-tab" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10A4.2 4.2 0 0 1 12 8a4.2 4.2 0 0 1 7.5 2.5c0 5.4-7.5 10-7.5 10zM3 13h4l2-3 3 5 2-3h7"/></svg><span>Morrendo</span></button>
     <button data-tab="criaturas" id="creatures-tab" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18.5h16M4 18.5 3 8l5 4 4-7 4 7 5-4-1 10.5"/></svg><span>Mestre</span></button>
     <button type="button" id="log-toggle" class="logtab" title="Histórico da mesa (barra da direita)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h10a2 2 0 0 1 2 2V17a2.5 2.5 0 0 1-2.5 2.5H8M7 3.5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h9.5M10 8.5h6M10 12h6"/></svg><span>Histórico</span></button>
   </nav>
@@ -148,7 +151,7 @@ $("#log-toggle").addEventListener("click", () => {
 });
 
 /* ---------- abas ---------- */
-const TABS = ["agir", "testes", "ficha", "combate", "criaturas"] as const;
+const TABS = ["agir", "testes", "ficha", "combate", "morrendo", "criaturas"] as const;
 type TabName = (typeof TABS)[number];
 
 /** Aba aberta e, no mestre, a criatura em foco (a que ele tocou no mapa). */
@@ -1085,6 +1088,159 @@ function splitAgir(c: Character) {
   agirEl.replaceChildren(...(top ? [top] : []), tabs, acoes, man);
 }
 
+/* ---------- aba Morrendo (só fichas de jogador) ---------- */
+const dyingEl = $<HTMLDivElement>("#tab-morrendo");
+let dyingShown = false;
+
+const isDown = () => state.hp <= 0;
+
+/** Mostra a aba quando a pessoa chega a 0 PV (abre sozinha) e esconde quando volta a ter PV. */
+function updateDyingTab(c: Character) {
+  const down = isDown();
+  $("#dying-tab").hidden = !down;
+  if (down) renderDying(c);
+  if (down && !dyingShown) switchTab("morrendo");
+  else if (!down && dyingShown && activeTab === "morrendo") switchTab("agir");
+  dyingShown = down;
+}
+
+/** Muda o valor de Morrendo, Ferido ou Condenado à mão (correções e efeitos que o sistema não vê). */
+function setDyingCond(c: Character, key: "dying" | "wounded" | "doomed", value: number) {
+  const conds = { ...state.conditions };
+  if (value <= 0) delete conds[key];
+  else conds[key] = value;
+  state = { ...state, conditions: conds };
+  if (key === "dying") {
+    if (value <= 0) state = stabilize(state);
+    else {
+      delete state.stable;
+      delete state.dead; // baixou de novo abaixo do limite: não está mais morto
+    }
+  }
+  if (key === "doomed") delete state.dead;
+  state = settle(state);
+  commit(c);
+}
+
+async function recoveryCheck(c: Character) {
+  const dying = state.conditions.dying ?? 0;
+  if (dying <= 0) return;
+  const dc = recoveryDc(dying);
+  const ask = await confirmRoll("Teste de recuperação", [`Teste simples: d20 contra CD ${dc} (10 + Morrendo ${dying})`]);
+  if (!ask.ok) return;
+  const msg = await publishRoll({ title: `Teste de recuperação (Morrendo ${dying})`, count: 1, sides: 20, mod: ask.bonus, dc });
+  const degree = msg.degree ?? "failure";
+  const r = applyRecovery(state, degree);
+  state = r.state;
+  commit(c);
+  void showCard({ kind: "check", msg });
+  say(`${DEGREE_TEXT[degree]}. ${r.text}`);
+  void publishEvent(`teste de recuperação: ${DEGREE_TEXT[degree]}. ${r.text}`);
+}
+
+function renderDying(c: Character) {
+  const dying = state.conditions.dying ?? 0;
+  const limit = deathLimit(state.conditions);
+  dyingEl.replaceChildren();
+
+  const head = el("div", "dying-head");
+  const untracked = dying === 0 && !state.stable && !state.dead; // 0 PV sem Morrendo (ficha antiga ou ajuste à mão)
+  head.append(el("strong", undefined, state.dead ? "Morto" : state.stable ? "Estabilizado" : untracked ? "0 PV" : `Morrendo ${dying}`));
+  head.append(
+    el(
+      "div",
+      "sub",
+      state.dead
+        ? `Chegou a Morrendo ${limit}.`
+        : state.stable
+          ? "Inconsciente com 0 PV. Dano volta a deixar Morrendo; cura devolve a consciência."
+          : untracked
+            ? "Você está a 0 PV. Aplique Morrendo para seguir as regras."
+            : `Morre em Morrendo ${limit}. No início do seu turno: teste de recuperação, CD ${recoveryDc(dying)}.`,
+    ),
+  );
+  dyingEl.append(head);
+
+  // Contadores: Morrendo, Ferido e Condenado.
+  const counters = el("div", "dying-counters");
+  for (const [key, label] of [["dying", "Morrendo"], ["wounded", "Ferido"], ["doomed", "Condenado"]] as const) {
+    const v = state.conditions[key] ?? 0;
+    const cell = el("div", "dying-counter");
+    cell.append(
+      el("span", "sub", label),
+      button("−", () => setDyingCond(c, key, Math.max(0, v - 1)), "mini"),
+      el("strong", undefined, String(v)),
+      button("+", () => setDyingCond(c, key, v + 1), "mini"),
+    );
+    counters.append(cell);
+  }
+  dyingEl.append(counters);
+
+  const actions = el("div", "dying-actions");
+  if (state.dead) {
+    actions.append(
+      button("Desfazer a morte (foi engano)", () => {
+        const conds = { ...state.conditions, dying: Math.max(1, limit - 1) };
+        state = { ...state, conditions: conds };
+        delete state.dead;
+        commit(c);
+      }),
+    );
+  } else {
+    if (untracked) {
+      actions.append(
+        button("Aplicar Morrendo (queda normal)", () => {
+          state = settle(state, 1);
+          commit(c);
+          void publishEvent("chegou a 0 PV e está Morrendo.");
+        }),
+      );
+    }
+    if (dying > 0) actions.append(button(`Teste de recuperação (CD ${recoveryDc(dying)})`, () => void recoveryCheck(c)));
+    actions.append(
+      button("Levou dano com 0 PV: Morrendo +1", () => {
+        state = hitWhileDown(state);
+        commit(c);
+        void publishEvent("levou dano com 0 PV: Morrendo aumenta.");
+      }),
+      button("Dano crítico com 0 PV: Morrendo +2", () => {
+        state = hitWhileDown(state, true);
+        commit(c);
+        void publishEvent("levou um golpe crítico com 0 PV: Morrendo aumenta em 2.");
+      }),
+      button("Estabilizar (Primeiros Socorros / Medicina)", () => {
+        state = stabilize(state);
+        commit(c);
+        void publishEvent("foi estabilizado: Morrendo some, continua inconsciente com 0 PV.");
+      }),
+      button("Recuperação heroica (gasta todos os Pontos de Herói)", () => {
+        state = stabilize(state);
+        commit(c);
+        void publishEvent("usou Recuperação Heroica: Morrendo some, sem ganhar Ferido.");
+      }),
+    );
+    // Cura: ao passar de 0 PV, perde Morrendo e ganha Ferido 1 (ou +1).
+    const heal = el("input");
+    heal.type = "number";
+    heal.min = "1";
+    heal.value = "1";
+    heal.className = "dying-heal";
+    heal.setAttribute("aria-label", "PV curados");
+    const healRow = el("div", "import");
+    healRow.append(
+      heal,
+      button("Curar", () => {
+        const n = Math.max(1, parseInt(heal.value, 10) || 1);
+        state = { ...state, hp: Math.min(state.max ?? n, state.hp + n) };
+        commit(c);
+        void publishEvent(`foi curado em ${n} PV: volta à consciência e fica Ferido.`);
+      }),
+    );
+    actions.append(healRow);
+  }
+  dyingEl.append(actions);
+}
+
 function statButton(s: Stat): HTMLButtonElement {
   const isSave = ["fortitude", "reflex", "will"].includes(s.key);
   return rollButton(s.name, s.total, s.name, RANK_LETTER[s.rank] ?? "", {
@@ -1207,6 +1363,7 @@ const newState = (c: Character): CharState => ({
   conditions: {},
 });
 let state: CharState = { hp: 0, temp: 0, conditions: {} };
+let lastHp: number | undefined; // PV de antes: se passou de >0 para 0, ficou Morrendo
 let targetValue = "";
 
 /** Redesenha a ficha mantendo a rolagem do painel e grava o estado na sala. */
@@ -1221,6 +1378,8 @@ function commit(c: Character) {
   state.max = maxHp(c);
   state.hp = Math.min(state.hp, state.max);
   state.ac = acWithConditions(baseAc(c), state.conditions).value;
+  state = settle(state, lastHp); // 0 PV → Morrendo; curado → Ferido
+  lastHp = state.hp;
   const scroll = $("#tab-ficha").parentElement!.scrollTop;
   renderSheet(c);
   $("#tab-ficha").parentElement!.scrollTop = scroll;
@@ -1711,6 +1870,7 @@ function renderSheet(c: Character) {
 
   splitAgir(c);
   fichaEl.append(featsBlock(c));
+  updateDyingTab(c);
 
   if (c.casters.length || c.focusPoints > 0) {
     const rest = el("button", undefined, "Descansar (recuperar espaços e foco)");
@@ -1944,6 +2104,7 @@ async function importById(id: string) {
     store.set(id);
     const stored = await loadState(id).catch(() => undefined);
     state = stored ?? newState(c);
+    lastHp = state.hp;
     // Garante PV máx. e CA no estado e grava na sala: sem isso, o token vinculado não mostra a barra.
     state.baseAc = baseAc(c);
     state.baseMax = c.hpMax + (state.adj?.hp ?? 0);
@@ -2072,6 +2233,7 @@ OBR.onReady(async () => {
     const incoming = id ? all[id] : undefined;
     if (!current || !incoming || JSON.stringify(incoming) === JSON.stringify(state)) return;
     state = incoming;
+    lastHp = state.hp;
     const scroll = $("#tab-ficha").parentElement!.scrollTop;
     renderSheet(current);
     $("#tab-ficha").parentElement!.scrollTop = scroll;
