@@ -1714,7 +1714,7 @@ function renderSheet(c: Character) {
   nums.append(acNum, num("Desl.", `${c.speed} ft`), num("CD de classe", c.classDC));
   head.append(nums);
 
-  fichaEl.append(head, hpBlock(c), conditionsBlock(c), adjustBlock(c), tokenBlock(c));
+  fichaEl.append(head, tokenBlock(c), hpBlock(c), conditionsBlock(c), adjustBlock(c));
   agirEl.append(extraField());
   const shield = shieldRow(c);
   if (shield) agirEl.append(shield);
