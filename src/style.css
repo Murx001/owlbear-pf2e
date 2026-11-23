@@ -1078,3 +1078,15 @@ input.init-val {
 input.dying-heal {
   width: 72px;
 }
+
+/* grupos dentro de Habilidades (um bloco só, em vez de uma caixa por grupo) */
+.feat-group {
+  margin-top: 8px;
+}
+.feat-title {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #d3ae64;
+  margin: 6px 0 4px;
+}

@@ -1250,7 +1250,7 @@ function statButton(s: Stat): HTMLButtonElement {
 }
 
 /** Seções da ficha que começam fechadas (o resto começa aberto). A escolha fica lembrada. */
-const CLOSED_BY_DEFAULT = new Set(["Token", "Atributos", "Perícias"]);
+const CLOSED_BY_DEFAULT = new Set(["Token", "Atributos", "Perícias", "Habilidades"]);
 const OPEN_PREFIX = "pf2e.open.";
 
 function readOpen(title: string): boolean {
@@ -1885,6 +1885,16 @@ function renderSheet(c: Character) {
   }
 }
 
+/** Título do grupo na ficha (plural). */
+const FEAT_GROUP: Record<string, string> = {
+  "Class Feat": "Talentos de classe",
+  "Ancestry Feat": "Talentos de ancestralidade",
+  "Skill Feat": "Talentos de perícia",
+  "General Feat": "Talentos gerais",
+  "Awarded Feat": "Talentos concedidos",
+  Heritage: "Herança",
+};
+
 const FEAT_TAG: Record<string, string> = {
   "Class Feat": "Talento de classe",
   "Ancestry Feat": "Talento de ancestralidade",
@@ -1912,7 +1922,7 @@ function featsBlock(c: Character): HTMLElement {
   const groups: [string, { name: string; kind: string; level: number }[]][] = [];
   for (const kind of Object.keys(FEAT_TAG)) {
     const list = (c.feats ?? []).filter((f) => f.type === kind).map((f) => ({ name: f.name, kind, level: f.level }));
-    if (list.length) groups.push([FEAT_TAG[kind] + (list.length > 1 ? "s" : ""), list]);
+    if (list.length) groups.push([FEAT_GROUP[kind] ?? FEAT_TAG[kind], list]);
   }
   const known = new Set(Object.keys(FEAT_TAG));
   const others = (c.feats ?? []).filter((f) => !known.has(f.type)).map((f) => ({ name: f.name, kind: f.type, level: f.level }));
@@ -1933,9 +1943,11 @@ function featsBlock(c: Character): HTMLElement {
       b.addEventListener("click", () => void openFeatCard(c, f.name, f.kind, f.level));
       wrap.append(b);
     }
-    return section(title, wrap);
+    const g = el("div", "feat-group");
+    g.append(el("div", "feat-title", title), wrap);
+    return g;
   });
-  box.append(section("Habilidades", note ?? el("p", "sub", "Toque num item para ler a descrição, traduzir e mostrar a todos.")), ...parts);
+  box.append(section("Habilidades", note ?? el("p", "sub", "Toque num item para ler a descrição, traduzir e mostrar a todos."), ...parts));
   return box;
 }
 
