@@ -1,7 +1,8 @@
 import type { DamageResult } from "./attack";
 import { adjustDamage, SECRET_ADJUST, type Defenses } from "./defenses";
 import { degreeOf, DEGREE_TEXT, publishEvent, publishRoll, type Degree } from "./roll";
-import { damageParts, type Outcome, type SaveStat, type SpellCondition, type SpellData } from "./spellData";
+import { castParts } from "./spellTweak";
+import { type Outcome, type SaveStat, type SpellCondition, type SpellData } from "./spellData";
 
 export interface SpellCast {
   casterName: string;
@@ -15,6 +16,10 @@ export interface SpellCast {
   dc: number;
   /** Modificador do atributo de conjuração (somado ao dano de certos truques). */
   abilityMod: number;
+  /** Fórmula de dano ajustada na caixa "deseja rolar?" ("2d8+3 fire; 1d6 fire"); vale no lugar da do Foundry. */
+  formula?: string;
+  /** Ações gastas (magias com custo variável). */
+  actions?: number;
 }
 
 /** Quem sofre a magia: ficha de jogador (calculada aqui) ou criatura (resolvida no mestre). */
@@ -100,7 +105,7 @@ const asOf = (cast: SpellCast) =>
  * sofrem o mesmo dano rolado. Devolve `null` se a magia não tem dano que possamos rolar sozinhos.
  */
 export async function rollSpellDamage(cast: SpellCast, kind: "dano" | "cura"): Promise<number | null> {
-  const parts = damageParts(cast.spell, cast.rank, cast.abilityMod);
+  const parts = castParts(cast);
   if (!parts || parts.length === 0) return null;
   let total = 0;
   for (const p of parts) {
@@ -117,7 +122,7 @@ export async function rollSpellDamage(cast: SpellCast, kind: "dano" | "cura"): P
 }
 
 const damageTypes = (cast: SpellCast) =>
-  (damageParts(cast.spell, cast.rank, cast.abilityMod) ?? [])
+  (castParts(cast) ?? [])
     .map((p) => p.type)
     .filter(Boolean)
     .join("/");

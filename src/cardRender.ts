@@ -6,7 +6,8 @@ import { COND_BY_KEY } from "./conditions";
 import { DEGREE_TEXT, formulaText, signed, type RollMessage } from "./roll";
 import { STAT_PT, type SpellCast, type SpellTargetResult } from "./saveSpell";
 import { translate } from "./translate";
-import { damageParts, type SpellData } from "./spellData";
+import { type SpellData } from "./spellData";
+import { castParts } from "./spellTweak";
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) {
   const e = document.createElement(tag);
@@ -142,7 +143,7 @@ function spellCard(
   root.append(header(`${cast.casterName} conjura ${sp.name}`, sub, onClose));
 
   // O dano é rolado uma vez e vale para todos os alvos.
-  const parts = damageParts(sp, cast.rank, cast.abilityMod);
+  const parts = castParts(cast);
   if (rolled !== null && parts && parts.length > 0) {
     const formula = parts.map((x) => formulaText(x.count, x.die, x.bonus)).join(" + ");
     const types = parts.map((x) => x.type).filter(Boolean).join("/");

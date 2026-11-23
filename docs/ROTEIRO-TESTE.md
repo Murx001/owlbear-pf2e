@@ -348,3 +348,9 @@ O botão do **histórico** (pergaminho, com a bolinha de mensagens novas) fica n
 
 ### 56. Aba Morrendo fica até o descanso (Ferido e Condenado)
 A aba **Morrendo** agora também aparece (sem abrir sozinha) **enquanto a pessoa estiver Ferida ou Condenada**, mesmo com PV: mostra os contadores, **Descansar** (Condenado −1; Ferido acaba se os PV estão cheios) e **Ferido acaba** (PV cheios + 10 minutos, ou Tratar Ferimentos). O **Descansar** da Ficha (casters) faz o mesmo. Quando não sobra Ferido nem Condenado, a aba some. Abre sozinha só ao cair a 0 PV.
+
+### 57. Dano de magia ajustável (ações e fórmula)
+1. Conjure **Force Barrage** (custo "1 a 3 ações"): na caixa "deseja rolar?" aparece **Dano (pode editar)** com um seletor de ações.
+2. Troque para 3 ações: a fórmula vira três projéteis (`1d4+1 force; 1d4+1 force; 1d4+1 force`). Role e confira o cartão.
+3. Edite a fórmula à mão (ex.: `2d8 fire`), role, e conjure a mesma magia de novo: a fórmula guardada volta sozinha, com o aviso "guardada neste navegador". O botão **Padrão** apaga o ajuste.
+4. Teste com uma magia de ataque (ex.: Needle Darts) e com uma de salvaguarda básica. Fórmula inválida (ex.: `abc`) não rola e destaca o campo.

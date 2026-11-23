@@ -1090,3 +1090,8 @@ input.dying-heal {
   color: #d3ae64;
   margin: 6px 0 4px;
 }
+
+/* Dano de magia editável na caixa "deseja rolar?" */
+.dmg-edit { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.dmg-edit .dmg-formula { width: 100%; box-sizing: border-box; }
+.dmg-edit .dmg-formula.bad { outline: 2px solid #e5484d; }

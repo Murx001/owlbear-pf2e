@@ -53,7 +53,8 @@ import {
   type SpellCast,
   type SpellTargetResult,
 } from "./saveSpell";
-import { damageParts, fetchSpell, tempHpAmount } from "./spellData";
+import { damageParts, fetchSpell, tempHpAmount, type SpellData } from "./spellData";
+import { actionRange, defaultFormula, parseFormulas, saveFormula, savedFormula } from "./spellTweak";
 import { pcSaveTarget } from "./targets";
 import {
   AREA_ARM,
@@ -305,7 +306,15 @@ type AttackPending = PendingBase & {
   rangeFeet?: number;
   /** Manobra (Agarrar, Derrubar…): perícia contra a CD do alvo, em vez de ataque contra a CA. */
   maneuver?: ManeuverId;
+  /** Ataque de magia: permite ajustar ações e fórmula de dano na caixa de confirmação. */
+  tweak?: DamageEdit;
 };
+/** Dano de magia editável na caixa "deseja rolar?" (ações gastas e fórmula). */
+interface DamageEdit {
+  spell: SpellData;
+  rank: number;
+  abilityMod: number;
+}
 type SpellPending = PendingBase & {
   kind: "spell";
   cast: SpellCast;
@@ -353,8 +362,8 @@ function confirmRoll(
   /** Em ataques: nome do alvo, para oferecer a opção "alvo flanqueado". */
   flankTarget?: string,
   /** Manobras: sem a opção de flanqueio (só MAP). */
-  opts?: { flank?: boolean },
-): Promise<{ ok: boolean; flanked: boolean; bonus: number; map: MapMode }> {
+  opts?: { flank?: boolean; damage?: DamageEdit },
+): Promise<{ ok: boolean; flanked: boolean; bonus: number; map: MapMode; formula?: string; actions?: number }> {
   return new Promise((resolve) => {
     targetingEl.hidden = true; // uma coisa de cada vez na barra de ação
     confirmEl.replaceChildren();
@@ -409,16 +418,77 @@ function confirmRoll(
       text.append(group);
     }
 
+    // Dano de magia: ações gastas (se o custo varia) e fórmula editável; o ajuste fica guardado no navegador.
+    let formulaInput: HTMLInputElement | undefined;
+    let chosenActions = 1;
+    const dmg = opts?.damage;
+    if (dmg) {
+      const range = actionRange(dmg.spell);
+      chosenActions = range ? range[0] : 1;
+      const group = el("div", "dmg-edit");
+      formulaInput = el("input");
+      formulaInput.type = "text";
+      formulaInput.className = "dmg-formula";
+      const fallback = () => defaultFormula(dmg.spell, dmg.rank, dmg.abilityMod, chosenActions) ?? "";
+      const note = el("div", "sub");
+      const refresh = () => {
+        const saved = savedFormula(dmg.spell, dmg.rank, chosenActions);
+        formulaInput!.value = saved ?? fallback();
+        note.textContent = saved ? "Fórmula guardada neste navegador para esta magia." : "";
+      };
+      const head = el("div", "import");
+      head.append(el("span", "sub", "Dano (pode editar)"));
+      if (range) {
+        const sel = el("select");
+        for (let n = range[0]; n <= range[1]; n++) sel.append(new Option(`${n} ${n === 1 ? "ação" : "ações"}`, String(n)));
+        sel.addEventListener("change", () => {
+          chosenActions = parseInt(sel.value, 10);
+          refresh();
+        });
+        head.append(sel);
+      }
+      head.append(
+        button("Padrão", () => {
+          saveFormula(dmg.spell, dmg.rank, chosenActions, null);
+          refresh();
+        }, "mini"),
+      );
+      refresh();
+      group.append(head, formulaInput, note);
+      text.append(group);
+    }
+
     const done = (v: boolean) => {
       if (v && box && flankTarget !== undefined) flankMemory.set(flankTarget, box.checked);
+      let formula: string | undefined;
+      if (v && dmg && formulaInput) {
+        formula = formulaInput.value.trim();
+        const same = formula === (defaultFormula(dmg.spell, dmg.rank, dmg.abilityMod, chosenActions) ?? "");
+        saveFormula(dmg.spell, dmg.rank, chosenActions, same ? null : formula);
+      }
       confirmEl.hidden = true;
       confirmEl.replaceChildren();
       updateBanner(); // volta a faixa de alvo, se ainda houver
-      resolve({ ok: v, flanked: v && !!box?.checked, bonus: v ? parseInt(stepInput.value, 10) || 0 : 0, map: mapMode });
+      resolve({
+        ok: v,
+        flanked: v && !!box?.checked,
+        bonus: v ? parseInt(stepInput.value, 10) || 0 : 0,
+        map: mapMode,
+        formula,
+        actions: dmg ? chosenActions : undefined,
+      });
     };
     const roll = el("button", undefined, "Rolar dados");
     roll.type = "button";
-    roll.addEventListener("click", () => done(true));
+    roll.addEventListener("click", () => {
+      if (formulaInput && !parseFormulas(formulaInput.value)) {
+        formulaInput.classList.add("bad");
+        formulaInput.title = "Use o formato 2d8+3 tipo; separe várias com ponto e vírgula.";
+        formulaInput.focus();
+        return;
+      }
+      done(true);
+    });
     const cancel = el("button", undefined, "Cancelar");
     cancel.type = "button";
     cancel.addEventListener("click", () => done(false));
@@ -623,11 +693,20 @@ async function onSelectionWhilePending(sel: string[], key: string) {
 
 /** Resolve a magia em todos os alvos: dano rolado uma vez, salvaguarda e efeitos por alvo. */
 async function resolveSpellOn(p: SpellPending, targets: Marked[]) {
-  const { cast, mode } = p;
+  const { mode } = p;
+  let cast = p.cast;
 
-  // Pergunta antes de rolar (se a opção está ligada); cancelar não gasta nada.
+  // Pergunta antes de rolar; cancelar não gasta nada. Com dano, a fórmula e as ações podem ser ajustadas.
   const alvos = targets.map((t) => t.name).join(", ");
-  if (!(await confirmRoll(cast.spell.name, [`Alvos: ${alvos}`, `CD ${cast.dc}`])).ok) return;
+  const hasDamage = mode !== "temp" && (mode !== "save" || !!cast.spell.save?.basic) && !!damageParts(cast.spell, cast.rank, cast.abilityMod);
+  const ask = await confirmRoll(
+    cast.spell.name,
+    [`Alvos: ${alvos}`, `CD ${cast.dc}`],
+    undefined,
+    hasDamage ? { damage: { spell: cast.spell, rank: cast.rank, abilityMod: cast.abilityMod } } : undefined,
+  );
+  if (!ask.ok) return;
+  if (ask.formula) cast = { ...cast, formula: ask.formula, actions: ask.actions };
 
   setTargeting(null);
   p.consume?.();
@@ -699,13 +778,14 @@ async function beginAttack(
   damage?: AttackSpec["damage"],
   consume?: () => void,
   rangeFeet?: number,
+  tweak?: DamageEdit,
 ) {
   // O alvo de um ataque é sempre um token escolhido no mapa; o bônus extra vale para este ataque.
   const x = extraBonus();
   resetExtra();
   bonus += x;
   const startSelection = ((await OBR.player.getSelection()) ?? []).join(",");
-  setTargeting({ kind: "attack", title, bonus, damage, startSelection, consume, rangeFeet });
+  setTargeting({ kind: "attack", title, bonus, damage, startSelection, consume, rangeFeet, tweak });
 }
 
 /** Clique numa manobra: pede o alvo no mapa (mesma faixa dos ataques), pergunta e rola contra a CD dele. */
@@ -850,18 +930,25 @@ async function onTargetPicked(tokenId: string) {
   const penalty = mapFor(attackNumber);
 
   // Pergunta antes de rolar (se a opção está ligada); cancelar mantém o alvo para escolher outro.
-  const answer = await confirmRoll(p.title, attackConfirmLines(p, targetName, penalty), targetName);
+  const answer = await confirmRoll(
+    p.title,
+    attackConfirmLines(p, targetName, penalty),
+    targetName,
+    p.tweak ? { damage: p.tweak } : undefined,
+  );
   if (!answer.ok) return;
 
   setTargeting(null);
   p.consume?.();
+  // Ataque de magia com a fórmula ajustada: vale a primeira parte (o ataque rola um dano só).
+  const edited = answer.formula ? parseFormulas(answer.formula, p.damage?.type ?? "")?.[0] : undefined;
   const spec: AttackSpec = {
     attackerName: current.name,
     attackerColor: await OBR.player.getColor(),
     title: p.title,
     bonus: p.bonus + answer.bonus,
     mapPenalty: answer.map === "none" ? 0 : penalty,
-    damage: p.damage,
+    damage: edited ? { dice: edited.count, die: edited.die, bonus: edited.bonus, type: edited.type } : p.damage,
     flanking: answer.flanked,
   };
   // Sem MAP: não conta como ataque. Conta como 2: o contador avança em dobro.
@@ -900,7 +987,7 @@ function attackConfirmLines(p: AttackPending, targetName: string, penalty: numbe
     `Ataque: d20 ${signed(p.bonus)}${penalty ? ` −${penalty} (ataques múltiplos)` : ""}`,
     `Ataque nº ${attackNumber}: MAP ${penalty ? `−${penalty}` : "0"} · o próximo terá ${next ? `−${next}` : "0"}`,
   ];
-  if (p.damage) {
+  if (p.damage && !p.tweak) {
     const d = p.damage;
     lines.push(`Dano: ${formulaText(d.dice, d.die, d.bonus)}${d.type ? ` ${d.type}` : ""}`);
   }
@@ -2140,6 +2227,7 @@ async function castCore(c: Character, o: CastOpts) {
         { dice: p.count, die: p.die, bonus: p.bonus, type: p.type },
         () => spend(false),
         data.rangeFeet,
+        { spell: data, rank: rankForHeighten, abilityMod: cast.abilityMod },
       );
     } else {
       await askSpellTarget(name, cast, "auto", () => spend(false));
