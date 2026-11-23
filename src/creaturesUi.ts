@@ -921,34 +921,73 @@ export function initCreatures(
   /* ---------- instância (um token) ---------- */
   const gearOpen = new Set<string>();
 
+  type ShowKey = keyof NonNullable<Creature["show"]>;
+
+  /** Liga ou desliga uma opção de visibilidade de uma criatura; o token some/aparece no mapa na hora. */
+  async function setShow(c: Creature, key: ShowKey, on: boolean) {
+    const fresh = loadCreatures().find((x) => x.id === c.id) ?? c;
+    upsertCreature({ ...fresh, show: { ...(fresh.show ?? {}), [key]: on } });
+    if (key === "token" && c.tokenId) {
+      await OBR.scene.items.updateItems([c.tokenId], (items) => {
+        for (const it of items) it.visible = on;
+      });
+    }
+  }
+
+  const VIS_ROWS: [string, ShowKey][] = [
+    ["O token no mapa", "token"],
+    ["O nome (desligado: \"Criatura\")", "name"],
+    ["A barra e o estado de PV (sem números)", "bar"],
+    ["Os PV em números", "numbers"],
+    ["A CA (escudinho no token)", "ac"],
+    ["As condições nas fichinhas", "conditions"],
+  ];
+
+  /** As mesmas opções da engrenagem, aplicadas de uma vez às criaturas marcadas. */
+  function bulkVisibility(marked: Creature[]): HTMLElement {
+    const d = el("details", "fold");
+    d.open = foldsOpen.has("bulk:vis");
+    d.addEventListener("toggle", () => {
+      if (d.open) foldsOpen.add("bulk:vis");
+      else foldsOpen.delete("bulk:vis");
+    });
+    d.append(el("summary", "sub", `Visível aos jogadores: ${marked.length} marcada(s)`));
+    const box = el("div", "visibility");
+    for (const [label, key] of VIS_ROWS) {
+      const lab = el("label", "manual-toggle");
+      const cb = el("input");
+      cb.type = "checkbox";
+      const on = marked.filter((c) => showOf(c)[key]).length;
+      cb.checked = on === marked.length;
+      cb.indeterminate = on > 0 && on < marked.length; // algumas já mostram, outras não
+      cb.addEventListener("change", () => {
+        void Promise.all(marked.map((c) => setShow(c, key, cb.checked)))
+          .catch((e) => say(e instanceof Error ? e.message : "Não foi possível mudar."))
+          .finally(() => render());
+      });
+      lab.append(cb, " " + label);
+      box.append(lab);
+    }
+    d.append(box);
+    return d;
+  }
+
   /** Engrenagem: o que os jogadores enxergam desta criatura. */
   function visibilityPanel(c: Creature): HTMLElement {
     const box = el("div", "visibility");
     box.append(el("strong", undefined, "Visível aos jogadores"));
-    const row = (label: string, key: keyof NonNullable<Creature["show"]>, apply?: (on: boolean) => Promise<void>) => {
+    for (const [label, key] of VIS_ROWS) {
       const lab = el("label", "manual-toggle");
       const cb = el("input");
       cb.type = "checkbox";
       cb.checked = showOf(c)[key];
       cb.addEventListener("change", () => {
-        upsertCreature({ ...c, show: { ...(c.show ?? {}), [key]: cb.checked } });
-        void apply?.(cb.checked).catch((e) => say(e instanceof Error ? e.message : "Não foi possível mudar."));
+        void setShow(c, key, cb.checked).catch((e) => say(e instanceof Error ? e.message : "Não foi possível mudar."));
         render();
       });
       lab.append(cb, " " + label);
       box.append(lab);
-    };
-    row("O token no mapa", "token", async (on) => {
-      if (!c.tokenId) return;
-      await OBR.scene.items.updateItems([c.tokenId], (items) => {
-        for (const it of items) it.visible = on;
-      });
-    });
-    row("O nome (desligado: \"Criatura\")", "name");
-    row("A barra e o estado de PV (sem números)", "bar");
-    row("Os PV em números", "numbers");
-    row("A CA (escudinho no token)", "ac");
-    row("As condições nas fichinhas", "conditions");
+    }
     return box;
   }
 
@@ -1372,8 +1411,10 @@ export function initCreatures(
           say(`${marked.length} criatura(s) entraram na iniciativa.`);
         }),
       );
-      if (marked.length === 0) inst.append(el("p", "sub", "Marque as criaturas que entram na iniciativa. Você pode digitar o valor de cada uma; vazio rola d20 + Percepção."));
+      if (marked.length === 0) inst.append(el("p", "sub", "Marque as criaturas (caixinha à esquerda): a iniciativa e as opções de visibilidade valem para as marcadas. Na iniciativa você pode digitar o valor de cada uma; vazio rola d20 + Percepção."));
     }
+    const markedNow = instances.filter((c) => initSel.has(c.id));
+    if (markedNow.length > 0) inst.append(bulkVisibility(markedNow));
     const iul = el("ul", "creatures");
     if (instances.length === 0) {
       iul.append(el("li", "sub", "Nenhuma criatura em jogo. Abra o bestiário, selecione tokens no mapa e use Vincular."));
