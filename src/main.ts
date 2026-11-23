@@ -141,14 +141,10 @@ app.innerHTML = `
     <button data-tab="combate"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h10M7 20.5h10M8 3.5v4l4 4.5-4 4.5v4M16 3.5v4l-4 4.5 4 4.5v4"/></svg><span>Combate</span></button>
     <button data-tab="morrendo" id="dying-tab" class="dying-tab" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10A4.2 4.2 0 0 1 12 8a4.2 4.2 0 0 1 7.5 2.5c0 5.4-7.5 10-7.5 10zM3 13h4l2-3 3 5 2-3h7"/></svg><span>Morrendo</span></button>
     <button data-tab="criaturas" id="creatures-tab" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18.5h16M4 18.5 3 8l5 4 4-7 4 7 5-4-1 10.5"/></svg><span>Mestre</span></button>
-    <button type="button" id="log-toggle" class="logtab" title="Histórico da mesa (barra da direita)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h10a2 2 0 0 1 2 2V17a2.5 2.5 0 0 1-2.5 2.5H8M7 3.5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h9.5M10 8.5h6M10 12h6"/></svg><span>Histórico</span></button>
   </nav>
 `;
 
 const $ = <T extends HTMLElement>(sel: string) => app.querySelector<T>(sel)!;
-$("#log-toggle").addEventListener("click", () => {
-  void OBR.broadcast.sendMessage("pf2e.dice/log-toggle", {}, { destination: "LOCAL" });
-});
 
 /* ---------- abas ---------- */
 const TABS = ["agir", "testes", "ficha", "combate", "morrendo", "criaturas"] as const;

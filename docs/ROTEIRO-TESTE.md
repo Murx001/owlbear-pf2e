@@ -342,3 +342,6 @@ Quando um jogador chega a **0 PV** (por ataque, magia ou pelo botão Dano), a ab
 
 ### 54. Visibilidade em massa (criaturas marcadas)
 Em **Mestre > Em jogo**, as caixinhas de marcar (as mesmas da iniciativa) também servem para a visibilidade: com criaturas marcadas aparece **Visível aos jogadores: N marcada(s)** com as mesmas opções da engrenagem (token, nome, barra, PV em números, CA, condições). Ligar ou desligar uma opção vale para todas as marcadas (o token some/aparece no mapa na hora). Se as marcadas estão diferentes, a opção aparece **indeterminada** (traço); ao clicar, vira ligada para todas.
+
+### 55. Botão do histórico no canto inferior direito
+O botão do **histórico** (pergaminho, com a bolinha de mensagens novas) fica no **canto inferior direito**, logo à esquerda da escala (5ft) do Owlbear; o painel do histórico abre **para cima**, acima dele. A aba "Histórico" saiu da barra de abas do painel (só o botão abre e fecha o histórico).
