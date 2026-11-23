@@ -345,3 +345,6 @@ Em **Mestre > Em jogo**, as caixinhas de marcar (as mesmas da iniciativa) també
 
 ### 55. Botão do histórico no canto inferior direito
 O botão do **histórico** (pergaminho, com a bolinha de mensagens novas) fica no **canto inferior direito**, logo à esquerda da escala (5ft) do Owlbear; o painel do histórico abre **para cima**, acima dele. A aba "Histórico" saiu da barra de abas do painel (só o botão abre e fecha o histórico).
+
+### 56. Aba Morrendo fica até o descanso (Ferido e Condenado)
+A aba **Morrendo** agora também aparece (sem abrir sozinha) **enquanto a pessoa estiver Ferida ou Condenada**, mesmo com PV: mostra os contadores, **Descansar** (Condenado −1; Ferido acaba se os PV estão cheios) e **Ferido acaba** (PV cheios + 10 minutos, ou Tratar Ferimentos). O **Descansar** da Ficha (casters) faz o mesmo. Quando não sobra Ferido nem Condenado, a aba some. Abre sozinha só ao cair a 0 PV.

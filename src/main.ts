@@ -1089,15 +1089,41 @@ const dyingEl = $<HTMLDivElement>("#tab-morrendo");
 let dyingShown = false;
 
 const isDown = () => state.hp <= 0;
+/** Ferido e Condenado duram além do 0 PV: a aba fica até o descanso que os tira. */
+const hasLingering = () => (state.conditions.wounded ?? 0) > 0 || (state.conditions.doomed ?? 0) > 0;
 
-/** Mostra a aba quando a pessoa chega a 0 PV (abre sozinha) e esconde quando volta a ter PV. */
+/**
+ * Mostra a aba a 0 PV (abre sozinha) e depois, enquanto a pessoa estiver Ferida ou Condenada, para
+ * ela acompanhar até o descanso. Some quando não há mais nada disso.
+ */
 function updateDyingTab(c: Character) {
   const down = isDown();
-  $("#dying-tab").hidden = !down;
-  if (down) renderDying(c);
-  if (down && !dyingShown) switchTab("morrendo");
-  else if (!down && dyingShown && activeTab === "morrendo") switchTab("agir");
+  const visible = down || hasLingering();
+  $("#dying-tab").hidden = !visible;
+  if (visible) renderDying(c);
+  if (down && !dyingShown) switchTab("morrendo"); // só abre sozinha ao cair
+  else if (!visible && activeTab === "morrendo") switchTab("agir");
   dyingShown = down;
+}
+
+/**
+ * Descanso (8 horas): Condenado cai 1; se os PV estão cheios, o Ferido acaba (PV cheios + 10 minutos
+ * de descanso). Devolve o que mudou, para avisar na mesa.
+ */
+function restEffects(): string[] {
+  const out: string[] = [];
+  const conds = { ...state.conditions };
+  if ((conds.doomed ?? 0) > 0) {
+    conds.doomed -= 1;
+    if (conds.doomed <= 0) delete conds.doomed;
+    out.push("Condenado cai 1");
+  }
+  if ((conds.wounded ?? 0) > 0 && state.hp >= (state.max ?? state.hp) && state.hp > 0) {
+    delete conds.wounded;
+    out.push("Ferido acaba (PV cheios)");
+  }
+  state = { ...state, conditions: conds };
+  return out;
 }
 
 /** Muda o valor de Morrendo, Ferido ou Condenado à mão (correções e efeitos que o sistema não vê). */
@@ -1134,7 +1160,54 @@ async function recoveryCheck(c: Character) {
   void publishEvent(`teste de recuperação: ${DEGREE_TEXT[degree]}. ${r.text}`);
 }
 
+/** Aba com PV acima de 0: só acompanha Ferido e Condenado até o descanso. */
+function renderLingering(c: Character) {
+  const wounded = state.conditions.wounded ?? 0;
+  const doomed = state.conditions.doomed ?? 0;
+  dyingEl.replaceChildren();
+  const head = el("div", "dying-head");
+  head.append(
+    el("strong", undefined, [wounded ? `Ferido ${wounded}` : "", doomed ? `Condenado ${doomed}` : ""].filter(Boolean).join(" · ")),
+    el(
+      "div",
+      "sub",
+      "Consciente. Ferido acaba quando você recupera todos os PV e descansa 10 minutos (e se cair a 0 PV de novo, você cai com Morrendo maior). Condenado cai 1 a cada descanso de uma noite.",
+    ),
+  );
+  dyingEl.append(head);
+
+  const counters = el("div", "dying-counters");
+  for (const [key, label] of [["wounded", "Ferido"], ["doomed", "Condenado"]] as const) {
+    const v = state.conditions[key] ?? 0;
+    const cell = el("div", "dying-counter");
+    cell.append(
+      el("span", "sub", label),
+      button("−", () => setDyingCond(c, key, Math.max(0, v - 1)), "mini"),
+      el("strong", undefined, String(v)),
+      button("+", () => setDyingCond(c, key, v + 1), "mini"),
+    );
+    counters.append(cell);
+  }
+  dyingEl.append(counters);
+
+  const actions = el("div", "dying-actions");
+  actions.append(
+    button("Descansar (Condenado −1; Ferido acaba se os PV estão cheios)", () => {
+      const rested = restEffects();
+      commit(c);
+      void publishEvent(`descansou. ${rested.length ? rested.join("; ") : "Nada mudou (Ferido só acaba com os PV cheios)."}`);
+      say(rested.length ? rested.join("; ") + "." : "Nada mudou: Ferido só acaba com os PV cheios.");
+    }),
+    button("Ferido acaba (PV cheios + 10 minutos de descanso, ou Tratar Ferimentos)", () => {
+      setDyingCond(c, "wounded", 0);
+      void publishEvent("deixou de estar Ferido.");
+    }),
+  );
+  dyingEl.append(actions);
+}
+
 function renderDying(c: Character) {
+  if (!isDown()) return renderLingering(c);
   const dying = state.conditions.dying ?? 0;
   const limit = deathLimit(state.conditions);
   dyingEl.replaceChildren();
@@ -1874,8 +1947,9 @@ function renderSheet(c: Character) {
     rest.addEventListener("click", () => {
       state.slotsUsed = {};
       state.focusUsed = 0;
+      const rested = restEffects();
       commit(c);
-      void publishEvent("descansou e recuperou espaços de magia e pontos de foco.");
+      void publishEvent(`descansou e recuperou espaços de magia e pontos de foco${rested.length ? `. ${rested.join("; ")}` : ""}.`);
     });
     fichaEl.append(rest);
   }
