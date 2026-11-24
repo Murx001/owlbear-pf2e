@@ -368,3 +368,9 @@ A aba **Morrendo** agora também aparece (sem abrir sozinha) **enquanto a pessoa
 2. Toque em **Ataque** (ou numa manobra, ou numa magia de um alvo): o painel fecha, você toca no alvo e o painel volta já com "deseja rolar?". O mesmo vale para o ataque de uma criatura do mestre.
 3. Magia de área (explosão, cone, linha): o painel fecha, você toca no mapa para posicionar e o painel volta com Resolver. Emanação normal não fecha. "Vários alvos" e "Alvos à mão" fecham o painel para você tocar nos tokens; reabra o painel para Resolver.
 4. Abrir o painel à mão antes de tocar no token cancela a espera. No computador nada muda (usa o token selecionado).
+
+### 60. Mover o botão do histórico
+1. **Segure** o botão do histórico por cerca de meio segundo (no computador, também vale o botão direito do mouse). Uma camada escura cobre a tela e mostra o botão para arrastar.
+2. Arraste o botão para onde preferir e toque em **Pronto**. O botão volta para a posição escolhida, e o painel do histórico abre acima dele.
+3. A posição fica guardada neste navegador, até para a próxima vez que abrir a sala. **Posição padrão** na mesma tela devolve o botão ao canto inferior direito.
+4. Um toque curto continua abrindo e fechando o histórico, como antes.

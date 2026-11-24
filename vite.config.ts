@@ -62,6 +62,7 @@ export default defineConfig({
         card: resolve(__dirname, "card.html"),
         log: resolve(__dirname, "log.html"),
         logbtn: resolve(__dirname, "logbtn.html"),
+        move: resolve(__dirname, "move.html"),
         bestiary: resolve(__dirname, "bestiary.html"),
       },
     },

@@ -3,6 +3,7 @@ import "./tokens.css";
 import "./logbtn.css";
 import { UNREAD_KEY, getUnread } from "./logStore";
 import { LOG_TOGGLE } from "./sidebar";
+import { LOG_MOVE_REQ } from "./logPos";
 
 const root = document.getElementById("btn")!;
 root.innerHTML = `
@@ -25,7 +26,38 @@ OBR.onReady(() => {
   window.addEventListener("storage", (e) => {
     if (e.key === UNREAD_KEY || e.key === null) showUnread();
   });
-  document.getElementById("scroll")!.addEventListener("click", () => {
+  const btn = document.getElementById("scroll")!;
+  // Segurar o botão (ou clicar com o botão direito) abre a tela de ajuste da posição.
+  let hold: number | undefined;
+  let moved = false;
+  let held = false;
+  let start = { x: 0, y: 0 };
+  btn.addEventListener("pointerdown", (e) => {
+    held = false;
+    moved = false;
+    start = { x: e.clientX, y: e.clientY };
+    hold = window.setTimeout(() => {
+      held = true;
+      void OBR.broadcast.sendMessage(LOG_MOVE_REQ, {}, { destination: "LOCAL" });
+    }, 600);
+  });
+  btn.addEventListener("pointermove", (e) => {
+    if (Math.hypot(e.clientX - start.x, e.clientY - start.y) > 10) {
+      moved = true;
+      window.clearTimeout(hold);
+    }
+  });
+  const stop = () => window.clearTimeout(hold);
+  btn.addEventListener("pointerup", stop);
+  btn.addEventListener("pointercancel", stop);
+  btn.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    stop();
+    held = true;
+    void OBR.broadcast.sendMessage(LOG_MOVE_REQ, {}, { destination: "LOCAL" });
+  });
+  btn.addEventListener("click", () => {
+    if (held || moved) return; // foi para ajustar, não para abrir
     void OBR.broadcast.sendMessage(LOG_TOGGLE, {}, { destination: "LOCAL" });
   });
 });
