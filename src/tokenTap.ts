@@ -17,6 +17,8 @@ export async function isPhone(): Promise<boolean> {
 }
 
 let armed: ((selection: string[]) => Promise<void>) | null = null;
+/** Como voltar depois do toque, se não for só reabrir o painel (ex.: reabrir o bestiário). */
+let reopenFn: (() => Promise<void>) | null = null;
 let closedByUs = false;
 let reopening = false;
 
@@ -55,9 +57,13 @@ export async function reopenAfterTap(): Promise<void> {
  * Executa `run` com o token que for tocado a seguir. No celular o painel fecha enquanto espera; no
  * computador roda já, com a seleção atual.
  */
-export async function whenTokenTapped(run: (selection: string[]) => Promise<void>): Promise<void> {
+export async function whenTokenTapped(
+  run: (selection: string[]) => Promise<void>,
+  opts?: { reopen?: () => Promise<void> },
+): Promise<void> {
   if (await closeForTap()) {
     armed = run;
+    reopenFn = opts?.reopen ?? null;
     return;
   }
   await run((await OBR.player.getSelection()) ?? []);
@@ -68,10 +74,15 @@ export async function takeTap(selection: string[]): Promise<boolean> {
   if (!armed || selection.length === 0) return false;
   const run = armed;
   armed = null;
+  const back = reopenFn;
+  reopenFn = null;
   try {
     await run(selection);
   } finally {
-    await reopenAfterTap();
+    if (back) {
+      closedByUs = false;
+      await back().catch(() => undefined);
+    } else await reopenAfterTap();
   }
   return true;
 }
@@ -82,5 +93,6 @@ export const waitingForTap = () => armed !== null || closedByUs;
 export function onPanelOpened() {
   if (reopening) return;
   armed = null;
+  reopenFn = null;
   closedByUs = false;
 }

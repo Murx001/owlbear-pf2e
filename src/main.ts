@@ -55,6 +55,7 @@ import {
 } from "./saveSpell";
 import { damageParts, fetchSpell, tempHpAmount, type SpellData } from "./spellData";
 import { prefetchFixes, suggestionText } from "./spellFixes";
+import { BESTIARY_LINK } from "./bestiaryView";
 import { closeForTap, onPanelOpened, reopenAfterTap, takeTap, whenTokenTapped } from "./tokenTap";
 import { actionRange, defaultFormula, parseFormulas, saveFormula, savedFormula } from "./spellTweak";
 import { pcSaveTarget } from "./targets";
@@ -2362,7 +2363,7 @@ $("#import").addEventListener("submit", (ev) => {
 });
 
 let combatUi: { render(): void } | undefined;
-let creaturesUi: { render(): void; focus(id: string): void } | undefined;
+let creaturesUi: { render(): void; focus(id: string): void; linkCreature(id: string): void } | undefined;
 let isGmRole = false;
 /** Ficha fixada ao token do jogador: é a única que ele abre. */
 let pinned = false;
@@ -2417,6 +2418,10 @@ OBR.onReady(async () => {
     const part = (window as unknown as { __PF2E_PART?: "play" | "all" }).__PF2E_PART ?? "play";
     creaturesUi = initCreatures($("#gm-creatures"), () => renderMasterHud(), part, (c, a) => void useCreatureAbility(c, a));
     isGmRole = true;
+    // Celular: o bestiário fecha e pede o vínculo ao painel, que espera o toque no token.
+    OBR.broadcast.onMessage(BESTIARY_LINK, (event) => {
+      creaturesUi?.linkCreature((event.data as { creatureId: string }).creatureId);
+    });
   }
   combatUi = await initCombat($("#tab-combate"), {
     getCharacter: () => current,

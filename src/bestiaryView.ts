@@ -25,4 +25,10 @@ export async function openBestiary(): Promise<void> {
   });
 }
 
+/**
+ * Celular: o bestiário é outra janela e some ao fechar, então quem espera o toque no token é o painel
+ * da extensão (que continua vivo). O bestiário manda este pedido e fecha; o painel vincula e reabre o bestiário.
+ */
+export const BESTIARY_LINK = "pf2e.dice/bestiary-link";
+
 export const closeBestiary = () => void OBR.popover.close(BESTIARY_POPOVER);

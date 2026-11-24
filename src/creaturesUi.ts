@@ -22,7 +22,7 @@ import {
   type CreatureAttack,
 } from "./creatures";
 import OBR from "@owlbear-rodeo/sdk";
-import { whenTokenTapped } from "./tokenTap";
+import { isPhone, whenTokenTapped } from "./tokenTap";
 import {
   NO_GROUP,
   allGroups,
@@ -41,7 +41,7 @@ import { addCombatant, loadCombat, saveCombat } from "./combat";
 import { COND_BY_KEY, CONDITIONS } from "./conditions";
 import { durationLabel, pruneDurations } from "./durations";
 import { showCard } from "./cardView";
-import { openBestiary } from "./bestiaryView";
+import { BESTIARY_LINK, closeBestiary, openBestiary } from "./bestiaryView";
 import {
   attacksMade,
   beginCreatureAttack,
@@ -448,6 +448,16 @@ export function initCreatures(
   }
 
   /* ---------- vincular a tokens ---------- */
+  /** Botão Vincular. No bestiário (celular) quem espera o toque é o painel: manda o pedido e fecha a janela. */
+  async function linkAction(c: Creature) {
+    if (part === "bestiary" && (await isPhone())) {
+      await OBR.broadcast.sendMessage(BESTIARY_LINK, { creatureId: c.id }, { destination: "LOCAL" });
+      closeBestiary();
+      return;
+    }
+    await whenTokenTapped(() => linkSelected(c));
+  }
+
   async function linkSelected(c: Creature) {
     try {
       const ids = await selectedTokenIds();
@@ -532,7 +542,7 @@ export function initCreatures(
     sum.append(
       star,
       name,
-      summaryButton("Vincular", () => whenTokenTapped(() => linkSelected(c)), "link"),
+      summaryButton("Vincular", () => linkAction(c), "link"),
       trashButton(
         "Remover do bestiário",
         () => {
@@ -551,7 +561,7 @@ export function initCreatures(
     body.append(statBlock(c));
     const actions = el("div", "import wrap");
     actions.append(
-      button("Vincular aos tokens selecionados", () => whenTokenTapped(() => linkSelected(c))),
+      button("Vincular aos tokens selecionados", () => linkAction(c)),
       button("Editar", () => {
         editing = c;
         render();
@@ -1469,5 +1479,10 @@ export function initCreatures(
       return;
     render();
   });
-  return { render, focus };
+  /** Pedido vindo do bestiário (celular): espera o toque no token e vincula; depois reabre o bestiário. */
+  function linkCreature(id: string) {
+    const c = loadCreatures().find((x) => x.id === id);
+    if (c) void whenTokenTapped(() => linkSelected(c), { reopen: openBestiary });
+  }
+  return { render, focus, linkCreature };
 }
