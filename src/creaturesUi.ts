@@ -8,6 +8,9 @@ import {
   creatureAc,
   creaturePerception,
   creatureSave,
+  featuresOf,
+  getCreature,
+  type CreatureFeature,
   damageCreature,
   isInstance,
   loadCreatures,
@@ -41,6 +44,7 @@ import { addCombatant, loadCombat, saveCombat } from "./combat";
 import { COND_BY_KEY, CONDITIONS } from "./conditions";
 import { durationLabel, pruneDurations } from "./durations";
 import { showCard } from "./cardView";
+import { aonSearch } from "./featData";
 import { BESTIARY_LINK, closeBestiary, openBestiary } from "./bestiaryView";
 import {
   attacksMade,
@@ -517,6 +521,57 @@ export function initCreatures(
     return body;
   }
 
+  /**
+   * Habilidades e características da criatura (passivas, reações, ações) com o texto do Foundry: cada
+   * uma abre um cartão com a descrição, o botão de traduzir e o de mostrar a todos. Criaturas
+   * importadas antes disso não têm o texto guardado; o botão busca de novo no Foundry.
+   */
+  function featureBlock(c: Creature): HTMLElement {
+    const box = el("div", "visibility");
+    const list = featuresOf(c);
+    const owner = c.templateId ? (getCreature(c.templateId) ?? c) : c; // o texto fica no modelo
+    const fromFoundry = (owner.source ?? "").startsWith("Foundry");
+    if (list.length === 0) {
+      box.append(el("p", "sub", fromFoundry ? "O texto das habilidades ainda não foi guardado." : "Nenhuma habilidade com texto."));
+    } else {
+      box.append(el("p", "sub", "Toque numa habilidade para ler, traduzir e mostrar a todos."));
+      const wrap = el("div", "chips");
+      for (const f of list) {
+        const b = el("button", "spell", f.actions ? `${f.name} ${f.actions.split(" ")[0]}` : f.name);
+        b.type = "button";
+        b.title = "Ver a descrição";
+        b.addEventListener("click", () => void openFeatureCard(f));
+        wrap.append(b);
+      }
+      box.append(wrap);
+    }
+    if (fromFoundry) {
+      const label = list.length ? "Atualizar do Foundry" : "Buscar do Foundry";
+      box.append(
+        button(label, async () => {
+          say(`Buscando ${owner.name} no Foundry…`);
+          const found = await findFoundryCreature(owner.name, () => owner.id).catch(() => null);
+          const feats = found?.creature.features;
+          if (!feats?.length) return say(`Não achei habilidades de "${owner.name}" no Foundry.`);
+          upsertCreature({ ...owner, features: feats, abilities: owner.abilities?.length ? owner.abilities : found?.creature.abilities });
+          say(`${feats.length} habilidades guardadas em ${owner.name}.`);
+          render();
+        }),
+      );
+    }
+    return box;
+  }
+
+  async function openFeatureCard(f: CreatureFeature) {
+    await showCard({
+      kind: "featinfo",
+      name: f.name,
+      tag: "Habilidade da criatura",
+      info: { name: f.name, actions: f.actions, traits: f.traits, prerequisites: [], description: f.description },
+      aon: aonSearch(f.name),
+    });
+  }
+
   /* ---------- modelo (ficha do bestiário) ---------- */
   function templateCard(c: Creature): HTMLElement {
     const d = el("details", "creature template");
@@ -559,6 +614,7 @@ export function initCreatures(
     // Corpo: a ficha completa e as ações.
     const body = el("div", "tpl-body");
     body.append(statBlock(c));
+    body.append(fold(c, "feat", "Habilidades (texto)", featureBlock(c), featuresOf(c).length));
     const actions = el("div", "import wrap");
     actions.append(
       button("Vincular aos tokens selecionados", () => linkAction(c)),
@@ -1195,6 +1251,7 @@ export function initCreatures(
     // Grupos recolhidos: só abrem quando o mestre precisa.
     if ((c.attacks ?? []).length > 0) body.append(fold(c, "atk", "Ataques", attackBlock(c), c.attacks!.length));
     body.append(fold(c, "abil", "Habilidades", abilityBlock(c), (c.abilities ?? []).length));
+    body.append(fold(c, "feat", "Habilidades (texto)", featureBlock(c), featuresOf(c).length));
     body.append(fold(c, "cond", "Aplicar condição", conditionAdder(c)));
 
     // Ficha completa (traços, defesas, ataques, notas), como a do bestiário.

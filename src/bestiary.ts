@@ -1,4 +1,5 @@
-import type { Creature, CreatureAbility, CreatureAttack } from "./creatures";
+import type { Creature, CreatureAbility, CreatureAttack, CreatureFeature } from "./creatures";
+import { parseFeat } from "./featData";
 
 /**
  * Bestiário do mestre: filtros, organização e importação de criaturas do repositório
@@ -128,6 +129,17 @@ export function abilitiesFromFoundry(items: any[]): CreatureAbility[] {
   return out;
 }
 
+/** Todas as habilidades (ações, reações, passivas) do NPC com o texto do Foundry, para abrir como cartão. */
+export function featuresFromFoundry(items: any[]): CreatureFeature[] {
+  return items
+    .filter((i) => i.type === "action" && i.name)
+    .map((i) => {
+      const info = parseFeat(i);
+      return { name: info.name, actions: info.actions, traits: info.traits, description: info.description };
+    })
+    .filter((f) => f.description.length > 0 || f.actions);
+}
+
 /** Converte um arquivo NPC do Foundry numa criatura do bestiário. */
 export function foundryToCreature(json: any, id: string, packLabel: string, packDir: string): Creature {
   const s = json.system ?? {};
@@ -171,6 +183,8 @@ export function foundryToCreature(json: any, id: string, packLabel: string, pack
   if (attacks.length) c.attacks = attacks;
   const abil = abilitiesFromFoundry(json.items ?? []);
   if (abil.length) c.abilities = abil;
+  const feats = featuresFromFoundry(json.items ?? []);
+  if (feats.length) c.features = feats;
   return c;
 }
 

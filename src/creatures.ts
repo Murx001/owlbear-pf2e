@@ -76,6 +76,23 @@ export interface Creature {
   show?: CreatureShow;
   /** Habilidades com salvaguarda, dano e condições. */
   abilities?: CreatureAbility[];
+  /** Habilidades e características com o texto do Foundry (passivas, reações, ações): cada uma abre um cartão. */
+  features?: CreatureFeature[];
+}
+
+/** Uma habilidade da criatura como aparece na ficha: o texto em inglês do Foundry, pronto para o cartão. */
+export interface CreatureFeature {
+  name: string;
+  /** "◆ (1 ação)", "↺ reação"… vazio para passivas. */
+  actions: string;
+  traits: string[];
+  description: string[];
+}
+
+/** Habilidades de uma criatura; as instâncias usam as do modelo, para não repetir o texto em cada token. */
+export function featuresOf(c: Creature): CreatureFeature[] {
+  if (c.features?.length) return c.features;
+  return c.templateId ? (getCreature(c.templateId)?.features ?? []) : [];
 }
 
 /**
@@ -121,6 +138,7 @@ export function makeInstances(template: Creature, existing: Creature[], tokenIds
     ...template,
     id: `cr-${crypto.randomUUID()}`,
     name: `${template.name} ${++n}`,
+    features: undefined,
     hp: template.hpMax,
     temp: 0,
     conditions: {},

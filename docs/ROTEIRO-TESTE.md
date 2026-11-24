@@ -386,3 +386,10 @@ A aba **Morrendo** agora também aparece (sem abrir sozinha) **enquanto a pessoa
 1. Na aba **Combate**, toque no **nome** de quem está na ordem de iniciativa (criatura ou personagem).
 2. A tela anda até o token dele (mantendo o zoom), o token fica selecionado e, **no celular**, o painel fecha para o mapa ficar à vista. No computador o painel continua aberto.
 3. A aba não muda sozinha (a seleção feita pelo toque não abre a ficha). Quem não tem token no mapa mostra "não tem token vinculado".
+
+### 63. Habilidades da criatura como cartões
+1. Importe uma criatura do Foundry (ex.: Goblin Warrior) e abra a ficha do modelo ou de uma instância: há o grupo **Habilidades (texto)** com um botão por habilidade (passivas, reações, ações).
+2. Toque numa: abre o cartão com a descrição em inglês, traços, custo de ações, o botão de **traduzir** e o de **mostrar a todos**.
+3. As instâncias (Goblin 1, 2…) mostram o mesmo texto do modelo.
+4. Criatura importada **antes** desta versão: o grupo diz que o texto não foi guardado; **Buscar do Foundry** traz as habilidades sem mexer em PV, condições nem vínculo com o token.
+5. Criatura cadastrada à mão: mostra "Nenhuma habilidade com texto" e não tem o botão do Foundry.
