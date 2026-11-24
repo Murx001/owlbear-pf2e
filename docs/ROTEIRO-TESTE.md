@@ -365,5 +365,5 @@ A aba **Morrendo** agora também aparece (sem abrir sozinha) **enquanto a pessoa
 ### 59. Celular: o painel fecha enquanto você toca no token
 1. No celular, na Ficha, toque em **Vincular ao token selecionado**: o painel fecha. Toque no token no mapa: ele é vinculado e o painel volta com a mensagem. (Também vale para **Desvincular**, e para **Vincular** nas criaturas do mestre.)
 2. Toque em **Ataque** (ou numa manobra, ou numa magia de um alvo): o painel fecha, você toca no alvo e o painel volta já com "deseja rolar?". O mesmo vale para o ataque de uma criatura do mestre.
-3. Magia de área não fecha o painel (precisa dele para posicionar a área e Resolver).
+3. Magia de área (explosão, cone, linha): o painel fecha, você toca no mapa para posicionar e o painel volta com Resolver. Emanação normal não fecha. "Vários alvos" e "Alvos à mão" fecham o painel para você tocar nos tokens; reabra o painel para Resolver.
 4. Abrir o painel à mão antes de tocar no token cancela a espera. No computador nada muda (usa o token selecionado).

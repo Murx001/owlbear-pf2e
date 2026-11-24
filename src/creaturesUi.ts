@@ -352,8 +352,15 @@ export function initCreatures(
   }
 
   /* ---------- importar do Foundry ---------- */
+  // A pesquisa e a lista baixada sobrevivem a redesenhos do painel (no celular o campo perde o foco ao tocar na lista).
+  let importQuery = "";
+  let foundryIndex: FoundryEntry[] | null = null;
+
   function importBox(): HTMLElement | null {
-    if (!showImport) return null;
+    if (!showImport) {
+      importQuery = "";
+      return null;
+    }
     const box = el("section", "block");
     box.append(
       el("h4", undefined, "Importar do Foundry"),
@@ -365,6 +372,7 @@ export function initCreatures(
     );
     const name = el("input");
     name.placeholder = "Nome da criatura em inglês";
+    name.value = importQuery;
     const go = button("Buscar e adicionar", async () => {
       const wanted = name.value.trim();
       if (!wanted) return;
@@ -394,7 +402,7 @@ export function initCreatures(
     const hint = el("p", "sub", "Carregando a lista de criaturas do Foundry…");
     results.append(hint);
     box.append(results);
-    let index: FoundryEntry[] | null = null;
+    let index: FoundryEntry[] | null = foundryIndex;
     const show = () => {
       results.replaceChildren();
       const q = name.value.trim();
@@ -422,10 +430,14 @@ export function initCreatures(
         results.append(b);
       }
     };
-    name.addEventListener("input", show);
+    name.addEventListener("input", () => {
+      importQuery = name.value;
+      show();
+    });
+    if (index) show();
     loadFoundryIndex().then(
       (list) => {
-        index = list;
+        index = foundryIndex = list;
         show();
       },
       (err) => {
@@ -1447,6 +1459,8 @@ export function initCreatures(
   render();
   // Mudanças feitas pela página de fundo (ataques e magias dos jogadores) aparecem aqui.
   window.addEventListener("storage", () => {
+    // Importando do Foundry: refazer o painel agora faria a lista sumir debaixo do dedo (celular).
+    if (showImport) return;
     // Não apaga o que o mestre está digitando.
     if (
       (document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement) &&

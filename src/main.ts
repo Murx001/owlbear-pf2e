@@ -533,6 +533,9 @@ async function armArea(free = false) {
     free,
   };
   await OBR.broadcast.sendMessage(AREA_ARM, msg, { destination: "LOCAL" });
+  // Celular: explosão, cone, linha e emanação livre pedem toque no mapa; o painel sai da frente e volta
+  // quando a área é posicionada. A emanação normal não precisa de toque e o painel fica.
+  if (msg.area.kind !== "emanation" || free) void closeForTap();
 }
 
 const clearArea = () => void OBR.broadcast.sendMessage(AREA_CLEAR, {}, { destination: "LOCAL" });
@@ -596,7 +599,7 @@ function setTargeting(p: Pending | null) {
   if (!p) clearArea(); // apaga a área desenhada no mapa
   updateBanner();
   // Celular: ataque, manobra e magia de um alvo fecham o painel; o próximo token tocado é o alvo.
-  // Magia de área precisa do painel aberto (posicionar a área e Resolver), então não fecha.
+  // Magia de área fecha o painel mais adiante (armArea), para posicionar a área, e reabre quando ela é colocada.
   if (p && (p.kind === "attack" || !p.cast.spell.area)) {
     void closeForTap().then((closed) => {
       if (closed && pending === p) p.startSelection = ""; // a seleção foi limpa: qualquer toque conta
@@ -616,6 +619,7 @@ handBtn.addEventListener("click", () => {
   marked = [];
   clearArea();
   updateBanner();
+  void closeForTap(); // celular: toque nos tokens com o painel fechado; reabra para Resolver
 });
 
 function cancelTargeting() {
@@ -628,6 +632,7 @@ multiBtn.addEventListener("click", () => {
   multiMode = !multiMode;
   marked = [];
   updateBanner();
+  if (multiMode) void closeForTap(); // celular: toque nos tokens com o painel fechado; reabra para Resolver
 });
 clearBtn.addEventListener("click", () => {
   marked = [];
@@ -2382,6 +2387,7 @@ OBR.onReady(async () => {
   // A ferramenta de área (página de fundo) devolve os tokens que ficaram dentro dela.
   OBR.broadcast.onMessage(AREA_RESULT, async (event) => {
     const r = event.data as AreaResultMsg;
+    await reopenAfterTap(); // celular: o painel fechou para posicionar a área
     if (pending?.kind !== "spell") return;
     if (r.error) {
       say(r.error, true);
@@ -2479,7 +2485,7 @@ OBR.onReady(async () => {
     // Celular: ação esperando o toque (vincular) roda agora; tocar num alvo reabre o painel para confirmar.
     const tapped = player.selection ?? [];
     if (await takeTap(tapped)) return;
-    if (tapped.length > 0) await reopenAfterTap();
+    if (tapped.length > 0 && !(pending && multiMode)) await reopenAfterTap();
 
     // Mestre: um ataque de criatura espera o token do alvo; essa seleção não abre fichas.
     if (await creatureAttackSelection(player.selection ?? [])) return;
