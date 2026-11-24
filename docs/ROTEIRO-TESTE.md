@@ -421,3 +421,8 @@ A aba **Morrendo** agora também aparece (sem abrir sozinha) **enquanto a pessoa
 4. **+** (ao lado do escudo) abre o bestiário com o aviso "Vinculando na cena: X"; o que for vinculado entra na cena (salvas ou importadas do Foundry). **Abrir bestiário** (topo) e o botão **Sem cena** do aviso limpam o destino.
 5. **Horda** (3 pontinhos do token): os clones entram na cena do token original (ou na cena escolhida no +).
 6. ⚙ da cena: renomear ou excluir (as criaturas vão para "Sem cena"). Sem nenhuma cena criada, a lista continua simples.
+
+### 68. Duas abas do mestre no mesmo navegador
+1. Abra a mesma sala em duas abas do mesmo navegador, ambas como mestre.
+2. Faça um ataque contra uma criatura: o histórico mostra **uma só** rolagem (antes aparecia repetida, com dados diferentes) e o dano é aplicado **uma vez**.
+3. Uma rolagem simples (ex.: Percepção) também aparece uma vez no histórico, e o contador de não lidas sobe de 1 em 1.

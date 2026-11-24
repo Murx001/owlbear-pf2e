@@ -5,6 +5,8 @@ export const ROLL_CHANNEL = "pf2e.dice/roll";
 export type Degree = "crit-success" | "success" | "failure" | "crit-failure";
 
 export interface RollMessage {
+  /** Identifica a rolagem: duas abas do mesmo navegador recebem a mesma mensagem e só uma grava. */
+  id?: string;
   name: string;
   color: string;
   title?: string; // ex: "Atletismo"
@@ -69,6 +71,7 @@ export function formulaText(count: number, sides: number, mod: number): string {
 export const EVENT_CHANNEL = "pf2e.dice/event";
 
 export interface EventMessage {
+  id?: string;
   name: string;
   color: string;
   text: string;
@@ -140,6 +143,7 @@ export function buildEventItem(msg: EventMessage): HTMLLIElement {
 /** Anuncia algo na sala (ex.: "conjurou Bless") sem rolagem. */
 export async function publishEvent(text: string, as?: { name: string; color: string }) {
   const msg: EventMessage = {
+    id: crypto.randomUUID(),
     name: as?.name ?? (await OBR.player.getName()),
     color: as?.color ?? (await OBR.player.getColor()),
     text,
@@ -153,6 +157,7 @@ export async function publishRoll(req: RollRequest): Promise<RollMessage> {
   const total = rolls.reduce((a, b) => a + b, 0) + req.mod;
 
   const msg: RollMessage = {
+    id: crypto.randomUUID(),
     name: req.as?.name ?? (await OBR.player.getName()),
     color: req.as?.color ?? (await OBR.player.getColor()),
     title: req.title,

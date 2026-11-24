@@ -225,12 +225,33 @@ export function creatureSaveTarget(id: string, fallback: Creature): SaveTarget {
 }
 
 /* ---------- lado do mestre ---------- */
+/**
+ * Com duas abas do mestre no mesmo navegador (mesmo armazenamento das criaturas), as duas receberiam
+ * o mesmo pedido e resolveriam duas vezes (dados e dano em dobro). A primeira a reivindicar o pedido
+ * resolve; a outra ignora. Em aparelhos diferentes o armazenamento é separado e cada um resolve o seu.
+ */
+function claimRequest(requestId: string): boolean {
+  const key = `pf2e.claim.${requestId}`;
+  const me = crypto.randomUUID();
+  try {
+    if (localStorage.getItem(key)) return false;
+    localStorage.setItem(key, me);
+    if (localStorage.getItem(key) !== me) return false;
+    // Limpa as marcas antigas para não acumular.
+    window.setTimeout(() => localStorage.removeItem(key), 60000);
+  } catch {
+    /* sem armazenamento: resolve normalmente */
+  }
+  return true;
+}
+
 /** Liga o resolvedor no cliente do mestre. `onChange` é chamado quando uma criatura muda. */
 export async function startGmResolver(onChange: () => void) {
   if ((await OBR.player.getRole()) !== "GM") return;
 
   OBR.broadcast.onMessage(SPELL_REQ, async (event) => {
     const req = event.data as SpellRequest;
+    if (!claimRequest(req.requestId)) return;
     await OBR.broadcast.sendMessage(ACK, { requestId: req.requestId }, { destination: "ALL" });
     const as = req.cast.casterColor
       ? { name: req.cast.casterName, color: req.cast.casterColor }
@@ -272,6 +293,7 @@ export async function startGmResolver(onChange: () => void) {
 
   OBR.broadcast.onMessage(MAN_REQ, async (event) => {
     const req = event.data as ManeuverRequest;
+    if (!claimRequest(req.requestId)) return;
     await OBR.broadcast.sendMessage(ACK, { requestId: req.requestId }, { destination: "ALL" });
     const creature = getCreature(req.creatureId);
     let result: ManeuverResult | null = null;
@@ -289,6 +311,7 @@ export async function startGmResolver(onChange: () => void) {
 
   OBR.broadcast.onMessage(REQ, async (event) => {
     const req = event.data as AttackRequest;
+    if (!claimRequest(req.requestId)) return;
     await OBR.broadcast.sendMessage(ACK, { requestId: req.requestId }, { destination: "ALL" });
 
     const creature = getCreature(req.creatureId);
