@@ -806,3 +806,15 @@ li.creature.scene-card > details[open] > summary .scene-preview { display: none;
 /* iniciativa digitada: linha própria no cartão (não espreme nome e escudo) */
 li.creature .tpl-sum { flex-wrap: wrap; }
 li.creature .tpl-sum input.init-val { order: 9; flex: 1 0 100%; width: 100%; max-width: 100%; box-sizing: border-box; min-height: 34px; height: 34px; margin-top: 2px; }
+
+/* celular: ataque com engrenagem (nome + Ataque + Dano + ⚙) estourava a largura; o nome ganha uma linha própria */
+.attack .aname { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 639px) {
+  .attack:has(> button.gear) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  }
+  .attack:has(> button.gear) > .aname {
+    grid-column: 1 / -1;
+  }
+  .attack:has(> button.gear) > button { min-width: 0; }
+}
