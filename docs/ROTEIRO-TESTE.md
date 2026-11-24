@@ -401,3 +401,23 @@ A aba **Morrendo** agora também aparece (sem abrir sozinha) **enquanto a pessoa
 4. Magia de ataque (ex.: Ray of Frost): usa o ataque de magia da lista contra a CA do alvo.
 5. Cancelar na caixa de confirmação **não** gasta o uso. Confirmar gasta; com 0 usos o botão fica desativado; **Restaurar usos** devolve todos.
 6. Os jogadores não veem a lista de magias da criatura.
+
+### 65. Aba Mestre mais enxuta
+1. A faixa de status acima das abas fica em **uma linha** (com reticências) e não cobre mais a ficha. **Tocar nela** abre o texto inteiro (com rolagem); uma nova mensagem fecha de novo.
+2. Resultados repetidos (vários alvos "sem dados") aparecem uma vez só, com texto curto.
+3. O aviso vermelho dos tokens sem criatura vira um selo pequeno **"N token(s) sem criatura"**; tocar nele mostra a explicação e o botão **Desvincular esses tokens**.
+4. **Tocar num token** de criatura: a tela vai para a aba Mestre, a linha da criatura rola até o meio e fica **destacada por alguns segundos**, e a ficha **não abre** (se já estava aberta, continua).
+
+### 66. Aba Mestre no estilo da ficha (celular)
+1. Cada criatura em jogo é um cartão no mesmo estilo do cabeçalho da ficha do jogador: contorno com cantos dourados, nome em Cinzel dourado, barra de PV e **CA em escudo**; condições aparecem como etiquetas coloridas (até 3, depois "+N").
+2. Tocar no token destaca o cartão com brilho dourado (fechado).
+3. Aberto, o cartão mostra **Habilidades** como botões (um por habilidade, roxos, como na ficha do jogador): toque para ler a descrição, traduzir e mostrar a todos. O agrupamento antigo virou **Usar com salvaguarda**.
+4. Criatura sem o texto guardado (importada antes): aparece o grupo **Habilidades (texto)** com **Buscar do Foundry**.
+
+### 67. Cenas na aba Mestre
+1. **+ Cena** cria uma cena. Cada cena é um cartão (mesmo estilo): caixinha, nome, prévia dos nomes das criaturas, quantidade no escudo, **+** e ⚙. Tocar abre e mostra as criaturas dentro.
+2. A caixinha da cena marca todas as criaturas dela. As marcadas valem **entre cenas**: marque duas salas e use **Iniciativa das marcadas** para juntá-las. **Marcar todas** marca tudo.
+3. Com criaturas marcadas aparece **Mover N marcada(s) para…**. Na ⚙ de cada criatura há o campo **Cena**.
+4. **+** (ao lado do escudo) abre o bestiário com o aviso "Vinculando na cena: X"; o que for vinculado entra na cena (salvas ou importadas do Foundry). **Abrir bestiário** (topo) e o botão **Sem cena** do aviso limpam o destino.
+5. **Horda** (3 pontinhos do token): os clones entram na cena do token original (ou na cena escolhida no +).
+6. ⚙ da cena: renomear ou excluir (as criaturas vão para "Sem cena"). Sem nenhuma cena criada, a lista continua simples.

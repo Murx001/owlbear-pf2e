@@ -72,6 +72,8 @@ export interface Creature {
   templateId?: string;
   /** Token do mapa a que esta instância está ligada. */
   tokenId?: string;
+  /** Cena do mestre em que a instância está (só organização; vazio = sem cena). */
+  scene?: string;
   /** Visibilidade para os jogadores. */
   show?: CreatureShow;
   /** Habilidades com salvaguarda, dano e condições. */
@@ -232,6 +234,46 @@ export function saveCreatures(list: Creature[]) {
     localStorage.setItem(STORE, JSON.stringify(list));
   } catch {
     /* sem armazenamento: os dados valem só até fechar a página */
+  }
+}
+
+const SCENES = "pf2e.scenes";
+
+/** Nomes das cenas criadas pelo mestre (ficam só no navegador dele, como as criaturas). */
+export function loadScenes(): string[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(SCENES) ?? "[]");
+    return Array.isArray(v) ? v.filter((s) => typeof s === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveScenes(list: string[]) {
+  try {
+    localStorage.setItem(SCENES, JSON.stringify(list));
+  } catch {
+    /* sem armazenamento */
+  }
+}
+
+const TARGET_SCENE = "pf2e.targetScene";
+
+/** Cena em que as criaturas vinculadas agora entram (definida pelo "+ Criatura" de uma cena). Vazio = sem cena. */
+export function getTargetScene(): string {
+  try {
+    return localStorage.getItem(TARGET_SCENE) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+export function setTargetScene(name: string) {
+  try {
+    if (name) localStorage.setItem(TARGET_SCENE, name);
+    else localStorage.removeItem(TARGET_SCENE);
+  } catch {
+    /* sem armazenamento */
   }
 }
 

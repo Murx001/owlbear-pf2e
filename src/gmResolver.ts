@@ -241,7 +241,7 @@ export async function startGmResolver(onChange: () => void) {
       const creature = getCreature(id);
       if (!creature) {
         await publishEvent("tentou usar uma magia, mas um dos alvos não tem dados cadastrados pelo mestre.", as);
-        out.push({ target: "Alvo", conditions: [], effect: "", notes: [], error: "sem dados: a criatura não está no bestiário do navegador do mestre (o mestre precisa vincular o token de novo)." });
+        out.push({ target: "Alvo", conditions: [], effect: "", notes: [], error: "sem dados (vincule o token de novo)." });
         continue;
       }
       try {

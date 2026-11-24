@@ -5,7 +5,7 @@ import "./theme.css";
 import "./popup.css";
 import { closeMenuPopover } from "./tokenMenu";
 import { freeCells, type Pt } from "./hordeLayout";
-import { getCreature, isInstance, loadCreatures, makeInstances, publicLink, upsertCreature, type Creature } from "./creatures";
+import { getTargetScene, getCreature, isInstance, loadCreatures, makeInstances, publicLink, upsertCreature, type Creature } from "./creatures";
 import { CREATURE_KEY, LINK_KEY, isCreatureLink, linkCreatureTokens } from "./token";
 
 /**
@@ -89,7 +89,7 @@ async function build() {
     if (!model) return;
     go.disabled = true;
     try {
-      await createHorde(base.id, model, own !== undefined, total);
+      await createHorde(base.id, model, own !== undefined, total, own?.scene);
     } catch (e) {
       say(e instanceof Error ? e.message : "Não foi possível criar a horda.", true);
       go.disabled = false;
@@ -98,7 +98,7 @@ async function build() {
   content.append(go, msg);
 }
 
-async function createHorde(baseId: string, model: Creature, baseHasCreature: boolean, total: number) {
+async function createHorde(baseId: string, model: Creature, baseHasCreature: boolean, total: number, baseScene?: string) {
   const [base] = await OBR.scene.items.getItems([baseId]);
   const dpi = await OBR.scene.grid.getDpi().catch(() => 150);
   const step =
@@ -121,7 +121,9 @@ async function createHorde(baseId: string, model: Creature, baseHasCreature: boo
   // Criaturas: um token já ligado fica como está; um token sem criatura vira o nº 1.
   const tokenIds = baseHasCreature ? copies.map((c) => c.id) : [baseId, ...copies.map((c) => c.id)];
   const made = makeInstances(model, loadCreatures(), tokenIds);
-  for (const inst of made) upsertCreature(inst);
+  // A horda fica na cena do token original (ou na cena escolhida no "+ Criatura").
+  const scene = baseScene ?? (getTargetScene() || undefined);
+  for (const inst of made) upsertCreature(scene ? { ...inst, scene } : inst);
   await linkCreatureTokens(made.map((m) => ({ tokenId: m.tokenId!, link: publicLink(m) })));
   // A horda segue a visibilidade do token original (linkCreatureTokens esconde criaturas novas).
   if (base.visible) await OBR.scene.items.updateItems(tokenIds, (items) => items.forEach((i) => (i.visible = true)));

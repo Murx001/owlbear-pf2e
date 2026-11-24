@@ -785,7 +785,7 @@ async function resolveSpellOn(p: SpellPending, targets: Marked[]) {
     say(
       offline
         ? "O mestre não respondeu. Ele precisa estar na sala com a extensão ativa."
-        : results.map((r) => describeSpellResult(cast, r)).join(" "),
+        : [...new Set(results.map((r) => describeSpellResult(cast, r)))].join(" "),
       offline,
     );
   } catch (e) {
@@ -2178,6 +2178,8 @@ function pips(total: number, used: number, onChange: (used: number) => void): HT
     return b;
   });
 }
+
+statusEl.addEventListener("click", () => statusEl.classList.toggle("open"));
 
 function say(text: string, error = false) {
   statusEl.textContent = text;

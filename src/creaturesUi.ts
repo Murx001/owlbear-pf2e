@@ -19,6 +19,10 @@ import {
   isInstance,
   loadCreatures,
   makeInstances,
+  loadScenes,
+  getTargetScene,
+  setTargetScene,
+  saveScenes,
   removeCreature,
   statusOf,
   publicLink,
@@ -45,7 +49,7 @@ import {
   type FoundryEntry,
 } from "./bestiary";
 import { addCombatant, loadCombat, saveCombat } from "./combat";
-import { COND_BY_KEY, CONDITIONS } from "./conditions";
+import { COND_BY_KEY, CONDITIONS, condTags } from "./conditions";
 import { durationLabel, pruneDurations } from "./durations";
 import { showCard } from "./cardView";
 import { aonSearch } from "./featData";
@@ -482,7 +486,9 @@ export function initCreatures(
         if (old) removeCreature(old.id);
       }
       const made = makeInstances(c, loadCreatures(), ids);
-      for (const inst of made) upsertCreature(inst);
+      // Entra na cena escolhida no "+ Criatura" (se não houver, fica sem cena).
+      const to = getTargetScene();
+      for (const inst of made) upsertCreature(to ? { ...inst, scene: to } : inst);
       await linkCreatureTokens(
         made.map((inst) => {
           return {
@@ -498,7 +504,7 @@ export function initCreatures(
   }
 
   /** Tudo sobre a criatura: traços, números, defesas, ataques, notas e origem. */
-  function statBlock(c: Creature): HTMLElement {
+  function statBlock(c: Creature, withFeats = true): HTMLElement {
     const body = el("div", "stat-block");
     if (c.traits?.length) {
       const chips = el("div", "traits");
@@ -525,9 +531,31 @@ export function initCreatures(
         `${a.name} ${signed(a.bonus)}${a.damage ? ` (${a.damage})` : ""}${a.traits.length ? ` [${a.traits.join(", ")}]` : ""}`,
       );
     }
-    if (c.notes) line("Notas", c.notes);
+    const chips = withFeats ? featureChips(c) : null;
+    if (chips) body.append(chips);
+    // Com os cartões, o texto "Habilidades: ..." das notas fica repetido.
+    const notes = featuresOf(c).length > 0 ? c.notes.replace(/^Habilidades:[^.]*.s*/, "") : c.notes;
+    if (notes) line("Notas", notes);
     if (c.source) body.append(el("div", "sub", `Origem: ${c.source}`));
     return body;
+  }
+
+  /** Botões das habilidades (um cartão por habilidade), como na ficha do jogador; `null` se não há texto guardado. */
+  function featureChips(c: Creature): HTMLElement | null {
+    const list = featuresOf(c);
+    if (list.length === 0) return null;
+    const g = el("div", "feat-group");
+    g.append(el("div", "feat-title", "Habilidades"));
+    const wrap = el("div", "chips");
+    for (const f of list) {
+      const b = el("button", "spell", f.actions ? `${f.name} ${f.actions.split(" ")[0]}` : f.name);
+      b.type = "button";
+      b.title = "Ler, traduzir e mostrar a todos";
+      b.addEventListener("click", () => void openFeatureCard(f));
+      wrap.append(b);
+    }
+    g.append(wrap);
+    return g;
   }
 
   /**
@@ -1167,7 +1195,11 @@ export function initCreatures(
     return box;
   }
 
-  const initSel = new Set<string>(); // criaturas marcadas para a iniciativa
+  const NO_SCENE = "__sem-cena__";
+  const openScenes = new Set<string>(); // cartões de cena abertos
+  const sceneGear = new Set<string>(); // cenas com a edição (renomear/excluir) aberta
+  let newScene = false;
+  const initSel = new Set<string>(); // criaturas marcadas para a iniciativa (valem entre cenas)
   const initVal = new Map<string, string>(); // iniciativa digitada (vazio = rolar)
   /** Valor da iniciativa: o digitado, ou d20 + Percepção (com as condições). */
   const initiativeOf = (c: Creature) => {
@@ -1188,6 +1220,111 @@ export function initCreatures(
     });
     d.append(el("summary", "sub", count === undefined ? title : `${title} (${count})`), body);
     return d;
+  }
+
+  /** Cartão de uma cena: mesmo desenho dos cartões das criaturas; ao abrir, mostra as criaturas dela. */
+  function sceneCard(name: string, members: Creature[], sceneNames: string[]): HTMLElement {
+    const loose = name === NO_SCENE;
+    const li = el("li", "creature scene-card");
+    const card = el("details", "cr-card");
+    card.open = openScenes.has(name);
+    card.addEventListener("toggle", () => {
+      if (card.open) openScenes.add(name);
+      else openScenes.delete(name);
+    });
+
+    const sum = el("summary", "tpl-sum");
+    // A caixinha marca/desmarca a cena inteira (junta salas que entraram em contato).
+    const on = members.filter((c) => initSel.has(c.id)).length;
+    const mark = el("input");
+    mark.type = "checkbox";
+    mark.checked = members.length > 0 && on === members.length;
+    mark.indeterminate = on > 0 && on < members.length;
+    mark.title = "Marcar todas as criaturas desta cena";
+    mark.addEventListener("click", (ev) => ev.stopPropagation());
+    mark.addEventListener("change", () => {
+      for (const c of members) mark.checked ? initSel.add(c.id) : initSel.delete(c.id);
+      render();
+    });
+    const names = el("span", "tpl-name cr-main");
+    names.append(
+      el("strong", undefined, loose ? "Sem cena" : name),
+      el("span", "sub", `${members.length} criatura(s)${on > 0 ? ` · ${on} marcada(s)` : ""}`),
+    );
+    // Prévia dos nomes (uma linha, corta com "…"): dá para saber o que tem na cena sem abrir.
+    if (members.length > 0) names.append(el("span", "sub scene-preview", members.map((c) => c.name).join(", ")));
+    const count = el("div", "hud-ac cr-ac");
+    count.append(el("strong", undefined, String(members.length)), el("span", undefined, "CRIAT."));
+    sum.append(mark, names, count);
+    if (!loose) {
+      // Abre o bestiário já apontado para esta cena: o que for vinculado lá entra aqui (inclusive a horda).
+      const add = summaryButton("+", () => { setTargetScene(name); void openBestiary(); }, "gear scene-add");
+      add.title = "Adicionar criatura a esta cena";
+      add.setAttribute("aria-label", `Adicionar criatura à cena ${name}`);
+      sum.append(add);
+      sum.append(summaryButton("⚙", () => {
+        sceneGear.has(name) ? sceneGear.delete(name) : sceneGear.add(name);
+        openScenes.add(name);
+        render();
+      }, "gear"));
+    }
+    card.append(sum);
+
+    const body = el("div", "cr-body");
+    if (!loose && sceneGear.has(name)) {
+      const row = el("div", "import wrap scene-edit");
+      const input = el("input");
+      input.type = "text";
+      input.value = name;
+      input.addEventListener("keydown", (ev) => ev.stopPropagation());
+      row.append(
+        input,
+        button("Renomear", () => {
+          const to = input.value.trim();
+          if (!to || to === name) return;
+          if (sceneNames.includes(to)) return say("Já existe uma cena com esse nome.");
+          saveScenes(sceneNames.map((s) => (s === name ? to : s)));
+          saveCreatures(loadCreatures().map((c) => (c.scene === name ? { ...c, scene: to } : c)));
+          openScenes.delete(name);
+          openScenes.add(to);
+          sceneGear.delete(name);
+          render();
+        }),
+        button("Excluir cena", () => {
+          // As criaturas não somem: vão para "Sem cena".
+          saveScenes(sceneNames.filter((s) => s !== name));
+          saveCreatures(loadCreatures().map((c) => (c.scene === name ? { ...c, scene: undefined } : c)));
+          openScenes.delete(name);
+          sceneGear.delete(name);
+          render();
+        }),
+      );
+      body.append(row);
+    }
+    const ul = el("ul", "creatures");
+    if (members.length === 0) ul.append(el("li", "sub", "Cena vazia. Use “+ Criatura” ou marque criaturas e “Mover marcadas para…”."));
+    for (const c of members) ul.append(instanceCard(c));
+    body.append(ul);
+    card.append(body);
+    li.append(card);
+    return li;
+  }
+
+  /** Troca a cena de uma criatura (na engrenagem do cartão). */
+  function sceneSelect(c: Creature): HTMLElement {
+    const row = el("div", "import wrap");
+    const sel = el("select");
+    sel.append(new Option("Sem cena", ""));
+    for (const s of loadScenes()) sel.append(new Option(s, s));
+    if (c.scene && !loadScenes().includes(c.scene)) sel.append(new Option(c.scene, c.scene));
+    sel.value = c.scene ?? "";
+    sel.addEventListener("change", () => {
+      upsertCreature({ ...(getCreature(c.id) ?? c), scene: sel.value || undefined });
+      if (sel.value) openScenes.add(sel.value);
+      render();
+    });
+    row.append(el("span", "sub", "Cena:"), sel);
+    return row;
   }
 
   function instanceCard(c: Creature): HTMLElement {
@@ -1215,16 +1352,37 @@ export function initCreatures(
       else initSel.delete(c.id);
       render();
     });
-    const names = el("span", "tpl-name");
+    // Mesmo desenho do cabeçalho da ficha do jogador: nome em dourado, barra de PV e CA em escudo.
+    const names = el("span", "tpl-name cr-main");
+    const scale = Math.max(c.hpMax, c.hp + c.temp, 1);
+    const bar = el("div", "hp-bar");
+    const fill = el("div", "hp-fill");
+    fill.style.width = `${(Math.max(0, c.hp) / scale) * 100}%`;
+    bar.append(fill);
+    if (c.temp > 0) {
+      const t = el("div", "hp-temp");
+      t.style.width = `${(c.temp / scale) * 100}%`;
+      bar.append(t);
+    }
     names.append(
       el("strong", undefined, c.name),
-      el(
-        "span",
-        "sub",
-        `CA ${ac.value}${ac.penalty > 0 ? ` (base ${c.ac})` : ""} · PV ${c.hp}/${c.hpMax}${c.temp ? ` +${c.temp}` : ""} · ${s.label}`,
-      ),
+      el("span", "sub", `${c.hp}/${c.hpMax} PV${c.temp ? ` (+${c.temp})` : ""} · ${s.label}`),
+      bar,
     );
-    sum.append(mark, names);
+    const tags = condTags(c.conditions, c.durations);
+    if (tags.length > 0) {
+      const row = el("div", "hud-tags");
+      for (const t of tags.slice(0, 3)) {
+        const chip = el("span", "hud-tag", t.text);
+        chip.style.background = t.color;
+        row.append(chip);
+      }
+      if (tags.length > 3) row.append(el("span", "hud-tag", `+${tags.length - 3}`));
+      names.append(row);
+    }
+    const acBox = el("div", `hud-ac cr-ac${ac.penalty > 0 ? " penalized" : ""}`);
+    acBox.append(el("strong", undefined, String(ac.value)), el("span", undefined, "CA"));
+    sum.append(mark, names, acBox);
     if (initSel.has(c.id)) {
       const iv = el("input", "init-val");
       iv.type = "number";
@@ -1253,7 +1411,7 @@ export function initCreatures(
     card.append(sum);
 
     const body = el("div", "cr-body");
-    if (gearOpen.has(c.id)) body.append(visibilityPanel(c));
+    if (gearOpen.has(c.id)) body.append(sceneSelect(c), visibilityPanel(c));
 
     // Salvaguardas e Percepção já com as condições; o que mudou fica destacado.
     const eff = el("div", "sub");
@@ -1347,8 +1505,10 @@ export function initCreatures(
 
     // Grupos recolhidos: só abrem quando o mestre precisa.
     if ((c.attacks ?? []).length > 0) body.append(fold(c, "atk", "Ataques", attackBlock(c), c.attacks!.length));
-    body.append(fold(c, "abil", "Habilidades", abilityBlock(c), (c.abilities ?? []).length));
-    body.append(fold(c, "feat", "Habilidades (texto)", featureBlock(c), featuresOf(c).length));
+    body.append(fold(c, "abil", "Usar com salvaguarda", abilityBlock(c), (c.abilities ?? []).length));
+    const featsOut = featureChips(c);
+    if (featsOut) body.append(featsOut);
+    else body.append(fold(c, "feat", "Habilidades (texto)", featureBlock(c), 0));
     if (spellEntriesOf(c).length > 0) body.append(fold(c, "spells", "Magias", spellBlock(c), spellEntriesOf(c).reduce((n, e) => n + e.spells.length, 0)));
     body.append(fold(c, "cond", "Aplicar condição", conditionAdder(c)));
 
@@ -1359,7 +1519,7 @@ export function initCreatures(
       if (sheet.open) openSheets.add(c.id);
       else openSheets.delete(c.id);
     });
-    sheet.append(el("summary", "sub", "Ficha completa"), statBlock(c));
+    sheet.append(el("summary", "sub", "Ficha completa"), statBlock(c, false));
     body.append(sheet);
     card.append(body);
     li.append(card);
@@ -1518,11 +1678,18 @@ export function initCreatures(
         const tokens = await OBR.scene.items.getItems((i) => isCreatureLink(i.metadata[CREATURE_KEY]));
         const orphans = tokens.filter((t) => !known.has((t.metadata[CREATURE_KEY] as CreatureLink).id));
         if (orphans.length === 0) return;
-        box.append(
+        // Selo pequeno; os detalhes só aparecem ao tocar.
+        const detail = el("div");
+        detail.hidden = true;
+        const chip = button(`${orphans.length} token(s) sem criatura`, () => {
+          detail.hidden = !detail.hidden;
+        }, "orphan-chip");
+        box.append(chip, detail);
+        detail.append(
           el(
             "p",
             "status error",
-            `${orphans.length} token(s) no mapa estão ligados a criaturas que NÃO existem neste navegador. Ataques e magias contra eles dão "sem dados cadastrados". Vincule esses tokens de novo (a partir do bestiário) ou importe o backup das criaturas.`,
+            "Esses tokens do mapa estão ligados a criaturas que não existem neste navegador, então ataques e magias contra eles dão \"sem dados\". Vincule-os de novo (a partir do bestiário) ou importe o backup das criaturas.",
           ),
           button("Desvincular esses tokens", async () => {
             await OBR.scene.items.updateItems(
@@ -1561,24 +1728,35 @@ export function initCreatures(
       if (imp) root.append(imp);
     }
     if (message) root.append(el("p", "status", message));
+    const target = getTargetScene();
+    if (showBestiary && target) {
+      const row = el("div", "import wrap scene-target");
+      row.append(el("span", "sub", `Vinculando na cena: ${target}`), button("Sem cena", () => { setTargetScene(""); render(); }, "mini"));
+      root.append(row);
+    }
     if (showBestiary) root.append(toolbar());
     if (!showPlay) {
       onRender?.();
       return;
     }
 
-    const instances = loadCreatures().filter(isInstance).sort(byName);
+    const all = loadCreatures().filter(isInstance).sort(byName);
+    // Cenas: as criadas pelo mestre + as que ainda têm criaturas (caso a lista tenha se perdido).
+    const sceneNames = [...new Set([...loadScenes(), ...all.map((c) => c.scene ?? "").filter(Boolean)])];
+    const marked = all.filter((c) => initSel.has(c.id)); // marcadas em qualquer cena
+
     const inst = el("section", "block");
-    inst.append(el("h4", undefined, `Em jogo (${instances.length})`));
+    inst.append(el("h4", undefined, `Em jogo (${all.length})`));
+    // Barra fixa: ações valem para as marcadas, de qualquer cena.
+    const head = el("div", "scene-head");
     const bar = el("div", "import wrap");
-    bar.append(button("Abrir bestiário", () => void openBestiary()));
-    inst.append(bar);
-    if (instances.length > 0) {
-      const marked = instances.filter((c) => initSel.has(c.id));
+    bar.append(button("Abrir bestiário", () => { setTargetScene(""); void openBestiary(); }));
+    if (all.length > 0) {
+      const allMarked = marked.length === all.length;
       bar.append(
-        button(marked.length === instances.length ? "Desmarcar todas" : "Marcar todas", () => {
-          if (marked.length === instances.length) initSel.clear();
-          else for (const c of instances) initSel.add(c.id);
+        button(allMarked ? "Desmarcar todas" : "Marcar todas", () => {
+          if (allMarked) initSel.clear();
+          else for (const c of all) initSel.add(c.id);
           render();
         }),
         button(`Iniciativa das marcadas (${marked.length})`, async () => {
@@ -1589,15 +1767,56 @@ export function initCreatures(
           say(`${marked.length} criatura(s) entraram na iniciativa.`);
         }),
       );
-      if (marked.length === 0) inst.append(el("p", "sub", "Marque as criaturas (caixinha à esquerda): a iniciativa e as opções de visibilidade valem para as marcadas. Na iniciativa você pode digitar o valor de cada uma; vazio rola d20 + Percepção."));
     }
-    const markedNow = instances.filter((c) => initSel.has(c.id));
-    if (markedNow.length > 0) inst.append(bulkVisibility(markedNow));
+    bar.append(button("+ Cena", () => { newScene = !newScene; render(); }));
+    head.append(bar);
+    if (newScene) {
+      const row = el("div", "import wrap scene-edit");
+      const input = el("input");
+      input.type = "text";
+      input.placeholder = "Nome da cena (ex.: Sala 2)";
+      const create = () => {
+        const name = input.value.trim();
+        if (!name) return;
+        if (!sceneNames.includes(name)) saveScenes([...sceneNames, name]);
+        openScenes.add(name);
+        newScene = false;
+        render();
+      };
+      input.addEventListener("keydown", (ev) => { ev.stopPropagation(); if (ev.key === "Enter") create(); });
+      row.append(input, button("Criar", create));
+      head.append(row);
+    }
+    if (marked.length > 0 && sceneNames.length > 0) {
+      // Mover as marcadas (de qualquer cena) para uma cena.
+      const mv = el("select");
+      mv.append(new Option(`Mover ${marked.length} marcada(s) para…`, ""));
+      for (const s of sceneNames) mv.append(new Option(s, s));
+      mv.append(new Option("Sem cena", NO_SCENE));
+      mv.addEventListener("change", () => {
+        if (!mv.value) return;
+        const to = mv.value === NO_SCENE ? undefined : mv.value;
+        const ids = new Set(marked.map((c) => c.id));
+        saveCreatures(loadCreatures().map((c) => (ids.has(c.id) ? { ...c, scene: to } : c)));
+        if (to) openScenes.add(to);
+        render();
+      });
+      head.append(mv);
+    }
+    inst.append(head);
+    if (all.length > 0 && marked.length === 0) inst.append(el("p", "sub", "Marque as criaturas (caixinha à esquerda), mesmo de cenas diferentes: a iniciativa e a visibilidade valem para as marcadas. Na iniciativa você pode digitar o valor de cada uma; vazio rola d20 + Percepção."));
+    if (marked.length > 0) inst.append(bulkVisibility(marked));
     const iul = el("ul", "creatures");
-    if (instances.length === 0) {
+    if (all.length === 0 && sceneNames.length === 0) {
       iul.append(el("li", "sub", "Nenhuma criatura em jogo. Abra o bestiário, selecione tokens no mapa e use Vincular."));
     }
-    for (const c of instances) iul.append(instanceCard(c));
+    if (sceneNames.length === 0) {
+      for (const c of all) iul.append(instanceCard(c)); // sem cenas: lista simples
+    } else {
+      for (const s of sceneNames) iul.append(sceneCard(s, all.filter((c) => c.scene === s), sceneNames));
+      const loose = all.filter((c) => !c.scene);
+      if (loose.length > 0) iul.append(sceneCard(NO_SCENE, loose, sceneNames));
+    }
     inst.append(iul);
     inst.append(orphanNotice());
 
@@ -1607,10 +1826,8 @@ export function initCreatures(
     onRender?.();
   }
 
-  /** Tocou no token de uma criatura: abre a ficha dela e rola até o cartão, com destaque. */
+  /** Tocou no token de uma criatura: rola até a linha dela e destaca, sem abrir a ficha. */
   function focus(id: string) {
-    openSheets.add(id);
-    openCreatures.add(id);
     render();
     const node = root.querySelector<HTMLElement>(`[data-cid="${id}"]`);
     if (!node) return;
