@@ -784,7 +784,8 @@ li.creature details.fold {
   border-bottom: 1px solid var(--line);
 }
 .scene-head .import { margin: 0; }
-.scene-head select, .scene-head input[type="text"] { width: 100%; min-height: 38px; }
+.scene-extra { display: grid; gap: 6px; margin-bottom: 6px; }
+.scene-extra select, .scene-extra input[type="text"] { width: 100%; min-height: 38px; }
 .scene-head .import button { min-height: 36px; padding: 0 10px; font-size: 0.92em; }
 
 li.creature.scene-card > details > .cr-body > ul.creatures { margin: 6px 0 0; padding: 0; }
@@ -801,3 +802,7 @@ li.creature.scene-card li.creature { margin-left: 0; }
 li.creature.scene-card > details[open] > summary .scene-preview { display: none; }
 .scene-add { font-weight: 700; font-size: 1.2em; }
 .scene-target { align-items: center; justify-content: space-between; }
+
+/* iniciativa digitada: linha própria no cartão (não espreme nome e escudo) */
+li.creature .tpl-sum { flex-wrap: wrap; }
+li.creature .tpl-sum input.init-val { order: 9; flex: 1 0 100%; width: 100%; max-width: 100%; box-sizing: border-box; min-height: 34px; height: 34px; margin-top: 2px; }

@@ -1770,6 +1770,7 @@ export function initCreatures(
     }
     bar.append(button("+ Cena", () => { newScene = !newScene; render(); }));
     head.append(bar);
+    const extra = el("div", "scene-extra"); // fora da barra fixa, para ela não ocupar a tela
     if (newScene) {
       const row = el("div", "import wrap scene-edit");
       const input = el("input");
@@ -1785,7 +1786,7 @@ export function initCreatures(
       };
       input.addEventListener("keydown", (ev) => { ev.stopPropagation(); if (ev.key === "Enter") create(); });
       row.append(input, button("Criar", create));
-      head.append(row);
+      extra.append(row);
     }
     if (marked.length > 0 && sceneNames.length > 0) {
       // Mover as marcadas (de qualquer cena) para uma cena.
@@ -1801,9 +1802,9 @@ export function initCreatures(
         if (to) openScenes.add(to);
         render();
       });
-      head.append(mv);
+      extra.append(mv);
     }
-    inst.append(head);
+    inst.append(head, extra);
     if (all.length > 0 && marked.length === 0) inst.append(el("p", "sub", "Marque as criaturas (caixinha à esquerda), mesmo de cenas diferentes: a iniciativa e a visibilidade valem para as marcadas. Na iniciativa você pode digitar o valor de cada uma; vazio rola d20 + Percepção."));
     if (marked.length > 0) inst.append(bulkVisibility(marked));
     const iul = el("ul", "creatures");
