@@ -35,13 +35,28 @@ function spot(w: number, h: number) {
 let panelOpen = false;
 export const isLogOpen = async () => panelOpen;
 
-/** Tamanho da tela do Owlbear; se ele não responder (celular), usa o da própria página. */
+/** De onde veio o tamanho da tela (para diagnóstico). */
+let sizeSource = "Owlbear";
+
+/**
+ * Tamanho da tela do Owlbear. Se ele não responder (celular), a página de fundo não serve de medida
+ * (ela é pequena e escondida): usa o tamanho do aparelho, com a altura reduzida para descontar as
+ * barras do navegador, para o botão cair sempre numa parte visível.
+ */
 async function viewportSize(): Promise<[number, number]> {
   try {
-    return await Promise.all([OBR.viewport.getWidth(), OBR.viewport.getHeight()]);
+    const size = await Promise.all([OBR.viewport.getWidth(), OBR.viewport.getHeight()]);
+    if (size[0] > 100 && size[1] > 100) {
+      sizeSource = "Owlbear";
+      return size;
+    }
   } catch {
-    return [window.innerWidth || 390, window.innerHeight || 800];
+    /* sem a API de tela */
   }
+  sizeSource = "estimado";
+  const sw = window.screen?.width || 390;
+  const sh = window.screen?.height || 800;
+  return [Math.round(sw), Math.round(sh * 0.75)];
 }
 
 async function openButton() {
@@ -134,6 +149,10 @@ export async function initSidebar() {
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       await openButton();
+      const [w, h] = await viewportSize();
+      if (w < PHONE_WIDTH) {
+        void OBR.notification.show(`PF2e: botão do histórico em ${w}×${h} (${sizeSource}). Segure o botão para mover.`, "INFO");
+      }
       return;
     } catch (e) {
       console.error("PF2e: botão do histórico", e);
