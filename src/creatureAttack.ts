@@ -1,4 +1,5 @@
 import OBR from "@owlbear-rodeo/sdk";
+import { closeForTap } from "./tokenTap";
 import { describeResult, resolveAgainst, resolveAttack, type AttackResult, type AttackSpec, type Target } from "./attack";
 import { CARD_SHARE, type CardData } from "./cardData";
 import { showCard } from "./cardView";
@@ -72,6 +73,7 @@ export function beginCreatureAttack(
   job = { creatureId: c.id, attack, ...opts, say, done };
   watcher?.(attack.name);
   say(`${attack.name}: selecione no mapa o token do alvo.`);
+  void closeForTap(); // celular: o painel fecha até o toque no alvo
 }
 
 export function cancelCreatureAttack() {

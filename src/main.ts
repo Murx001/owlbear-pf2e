@@ -2,13 +2,13 @@ import OBR from "@owlbear-rodeo/sdk";
 import "./tokens.css";
 import "./style.css";
 import "./theme.css";
-import type { Attack, Character, Stat } from "./character";
+import type { Attack, Character, GearItem, Stat } from "./character";
 import { parseDamage } from "./damage";
 import { creatureAc, getCreature, type Creature, type CreatureAbility } from "./creatures";
 import { cancelCreatureAttack, creatureAttackSelection, setCreatureConfirm, watchCreatureAttack } from "./creatureAttack";
 import { abilityCast } from "./creatureAbility";
 import { CARD_SHARE, type CardData } from "./cardData";
-import { aonSearch, fetchFeat } from "./featData";
+import { aonSearch, fetchEquipment, fetchFeat } from "./featData";
 import {
   COND_BY_KEY,
   CONDITIONS,
@@ -55,6 +55,7 @@ import {
 } from "./saveSpell";
 import { damageParts, fetchSpell, tempHpAmount, type SpellData } from "./spellData";
 import { prefetchFixes, suggestionText } from "./spellFixes";
+import { closeForTap, onPanelOpened, reopenAfterTap, takeTap, whenTokenTapped } from "./tokenTap";
 import { actionRange, defaultFormula, parseFormulas, saveFormula, savedFormula } from "./spellTweak";
 import { pcSaveTarget } from "./targets";
 import {
@@ -594,6 +595,13 @@ function setTargeting(p: Pending | null) {
   bannerNote = "";
   if (!p) clearArea(); // apaga a área desenhada no mapa
   updateBanner();
+  // Celular: ataque, manobra e magia de um alvo fecham o painel; o próximo token tocado é o alvo.
+  // Magia de área precisa do painel aberto (posicionar a área e Resolver), então não fecha.
+  if (p && (p.kind === "attack" || !p.cast.spell.area)) {
+    void closeForTap().then((closed) => {
+      if (closed && pending === p) p.startSelection = ""; // a seleção foi limpa: qualquer toque conta
+    });
+  }
 }
 
 areaBtn.addEventListener("click", () => {
@@ -1414,7 +1422,7 @@ function statButton(s: Stat): HTMLButtonElement {
 }
 
 /** Seções da ficha que começam fechadas (o resto começa aberto). A escolha fica lembrada. */
-const CLOSED_BY_DEFAULT = new Set(["Token", "Atributos", "Perícias", "Habilidades"]);
+const CLOSED_BY_DEFAULT = new Set(["Token", "Atributos", "Perícias", "Habilidades", "Equipamento"]);
 const OPEN_PREFIX = "pf2e.open.";
 
 function readOpen(title: string): boolean {
@@ -1489,29 +1497,42 @@ function tokenBlock(c: Character): HTMLElement {
 
   const link = el("button", undefined, "Vincular ao token selecionado");
   link.type = "button";
-  link.addEventListener("click", async () => {
+  link.addEventListener("click", () => {
     msg.className = "status";
-    try {
-      await linkSelectedToken({ pathbuilderId: c.pathbuilderId ?? "", name: c.name });
-      if (c.pathbuilderId) await saveState(c.pathbuilderId, state);
-      msg.textContent = `Token vinculado a ${c.name}.`;
-    } catch (e) {
-      msg.textContent = e instanceof Error ? e.message : "Não foi possível vincular.";
-      msg.className = "status error";
-    }
+    msg.textContent = "";
+    // Celular: o painel fecha e o próximo token tocado é vinculado (no computador usa o selecionado).
+    void whenTokenTapped(async () => {
+      try {
+        await linkSelectedToken({ pathbuilderId: c.pathbuilderId ?? "", name: c.name });
+        if (c.pathbuilderId) await saveState(c.pathbuilderId, state);
+        msg.textContent = `Token vinculado a ${c.name}.`;
+        say(`Token vinculado a ${c.name}.`);
+      } catch (e) {
+        const text = e instanceof Error ? e.message : "Não foi possível vincular.";
+        msg.textContent = text;
+        msg.className = "status error";
+        say(text, true);
+      }
+    });
   });
 
   const unlink = el("button", undefined, "Desvincular");
   unlink.type = "button";
-  unlink.addEventListener("click", async () => {
+  unlink.addEventListener("click", () => {
     msg.className = "status";
-    try {
-      await unlinkSelectedToken();
-      msg.textContent = "Vínculo removido do token.";
-    } catch (e) {
-      msg.textContent = e instanceof Error ? e.message : "Não foi possível desvincular.";
-      msg.className = "status error";
-    }
+    msg.textContent = "";
+    void whenTokenTapped(async () => {
+      try {
+        await unlinkSelectedToken();
+        msg.textContent = "Vínculo removido do token.";
+        say("Vínculo removido do token.");
+      } catch (e) {
+        const text = e instanceof Error ? e.message : "Não foi possível desvincular.";
+        msg.textContent = text;
+        msg.className = "status error";
+        say(text, true);
+      }
+    });
   });
 
   row.append(link, unlink);
@@ -1597,23 +1618,6 @@ function hpBlock(c: Character): HTMLElement {
   const max = maxHp(c);
   const hp = Math.min(state.hp, max);
 
-  const big = el("div", "hp-big");
-  big.append(
-    el("strong", undefined, String(hp)),
-    el("span", undefined, ` / ${max} PV${state.temp ? `  (+${state.temp} temp.)` : ""}`),
-  );
-  // A barra representa o PV máximo; o PV temporário vem logo depois do PV atual, em azul.
-  const scale = Math.max(max, hp + state.temp);
-  const bar = el("div", "hp-bar");
-  const fill = el("div", "hp-fill");
-  fill.style.width = `${(hp / scale) * 100}%`;
-  bar.append(fill);
-  if (state.temp > 0) {
-    const tempFill = el("div", "hp-temp");
-    tempFill.style.width = `${(state.temp / scale) * 100}%`;
-    bar.append(tempFill);
-  }
-
   const amount = el("input");
   amount.type = "number";
   amount.min = "0";
@@ -1669,7 +1673,9 @@ function hpBlock(c: Character): HTMLElement {
       state.temp = Math.max(state.temp, n); // PV temporários não acumulam: vale o maior
     }),
   );
-  return section("Pontos de vida", big, bar, quick, row);
+  const box = el("div", "hp-inline");
+  box.append(quick, row);
+  return box;
 }
 
 const durSuffix = (d: Durations[string] | undefined) => (d ? ` · ${durationLabel(d)}` : "");
@@ -1859,10 +1865,7 @@ function renderSheet(c: Character) {
   renderHud(c);
 
   const head = el("div", "head-card");
-  head.append(
-    el("h3", undefined, c.name),
-    el("p", "sub", `${c.ancestry} (${c.heritage}) · ${c.className} ${c.level} · ${c.background}`),
-  );
+  head.append(el("p", "sub", `${c.ancestry} (${c.heritage}) · ${c.className} ${c.level} · ${c.background}`));
   const nums = el("div", "numbers");
   const num = (label: string, v: string | number) => {
     const d = el("div", "num");
@@ -1875,10 +1878,11 @@ function renderSheet(c: Character) {
     if (ac.penalty > ac.bonus) acNum.classList.add("penalized");
     acNum.title = `Base ${baseAc(c)}${ac.bonus ? `, +${ac.bonus} de escudo` : ""}${ac.penalty ? `, −${ac.penalty} por condições` : ""}`;
   }
-  nums.append(acNum, num("Desl.", `${c.speed} ft`), num("CD de classe", c.classDC));
-  head.append(nums);
+  void acNum; // a CA aparece no escudo da barra de cima
+  nums.append(num("Desl.", `${c.speed} ft`), num("CD de classe", c.classDC));
+  head.append(nums, hpBlock(c));
 
-  fichaEl.append(head, tokenBlock(c), hpBlock(c), conditionsBlock(c), adjustBlock(c));
+  fichaEl.append(head, tokenBlock(c), conditionsBlock(c), adjustBlock(c));
   agirEl.append(extraField());
   const shield = shieldRow(c);
   if (shield) agirEl.append(shield);
@@ -2033,7 +2037,7 @@ function renderSheet(c: Character) {
   }
 
   splitAgir(c);
-  fichaEl.append(featsBlock(c));
+  fichaEl.append(featsBlock(c), gearBlock(c));
   updateDyingTab(c);
 
   if (c.casters.length || c.focusPoints > 0) {
@@ -2114,6 +2118,46 @@ function featsBlock(c: Character): HTMLElement {
   });
   box.append(section("Habilidades", note ?? el("p", "sub", "Toque num item para ler a descrição, traduzir e mostrar a todos."), ...parts));
   return box;
+}
+
+/** Clique num item de equipamento: cartão com a descrição do Foundry (e o botão de traduzir). */
+async function openGearCard(name: string, label: string, tag: string) {
+  say(`Buscando ${label}…`);
+  const info = await fetchEquipment(name).catch(() => null);
+  say("");
+  await showCard({ kind: "featinfo", name: label, tag, info, aon: aonSearch(name) });
+}
+
+/** Equipamento importado do Pathbuilder: armas, armadura, itens e dinheiro; cada item abre a descrição. */
+function gearBlock(c: Character): HTMLElement {
+  const g = c.gear;
+  if (!g) {
+    return section("Equipamento", el("p", "sub", "Reimporte a ficha do Pathbuilder para ver o equipamento."));
+  }
+  const group = (title: string, tag: string, list: GearItem[]) => {
+    if (list.length === 0) return null;
+    const wrap = el("div", "chips");
+    for (const it of list) {
+      const text = `${it.label}${it.qty > 1 ? ` ×${it.qty}` : ""}${it.note ? ` (${it.note})` : ""}`;
+      const b = el("button", "spell", text);
+      b.type = "button";
+      b.title = "Ver a descrição";
+      b.addEventListener("click", () => void openGearCard(it.name, it.label, tag));
+      wrap.append(b);
+    }
+    const box = el("div", "feat-group");
+    box.append(el("div", "feat-title", title), wrap);
+    return box;
+  };
+  const m = g.money;
+  const money = m ? [m.pp && `${m.pp} pp`, m.gp && `${m.gp} gp`, m.sp && `${m.sp} sp`, m.cp && `${m.cp} cp`].filter(Boolean).join(" · ") : "";
+  const parts = [
+    group("Armas", "Arma", g.weapons),
+    group("Armadura", "Armadura", g.armor),
+    group("Itens", "Item", g.items),
+    money ? el("p", "sub", `Dinheiro: ${money}`) : null,
+  ].filter(Boolean) as HTMLElement[];
+  return section("Equipamento", el("p", "sub", "Toque num item para ler a descrição, traduzir e mostrar a todos."), ...parts);
 }
 
 /** Fileira de marcadores: cheio = disponível. Clicar num cheio gasta; num vazio devolve. */
@@ -2322,6 +2366,8 @@ OBR.onReady(async () => {
   // Painel da esquerda um pouco maior (o manifesto traz o mesmo tamanho para quem ainda não recarregou).
   void Promise.resolve(OBR.action?.setWidth?.(460)).catch(() => undefined);
   void Promise.resolve(OBR.action?.setHeight?.(700)).catch(() => undefined);
+  // Abrir o painel à mão cancela a espera pelo toque num token (celular).
+  void Promise.resolve(OBR.action?.onOpenChange?.((open: boolean) => open && onPanelOpened())).catch(() => undefined);
   listenAttackAcks();
   refreshDice();
   // O botão Conjurar do cartão da magia manda conjurar aqui (é este painel que tem a ficha).
@@ -2429,6 +2475,11 @@ OBR.onReady(async () => {
     const key = (player.selection ?? []).join(",");
     if (key === lastSelection) return;
     lastSelection = key;
+
+    // Celular: ação esperando o toque (vincular) roda agora; tocar num alvo reabre o painel para confirmar.
+    const tapped = player.selection ?? [];
+    if (await takeTap(tapped)) return;
+    if (tapped.length > 0) await reopenAfterTap();
 
     // Mestre: um ataque de criatura espera o token do alvo; essa seleção não abre fichas.
     if (await creatureAttackSelection(player.selection ?? [])) return;

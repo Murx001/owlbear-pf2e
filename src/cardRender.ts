@@ -275,6 +275,7 @@ function featInfoCard(root: HTMLElement, d: Extract<CardData, { kind: "featinfo"
     for (const t of i.traits) traits.append(el("span", "trait", t));
     root.append(traits);
   }
+  for (const [k, v] of i.facts ?? []) root.append(row(k, v));
   if (i.actions) root.append(row("Ações", i.actions));
   if (i.prerequisites.length) root.append(row("Pré-requisitos", i.prerequisites.join("; ")));
   const desc = el("div", "spell-desc");

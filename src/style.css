@@ -1095,3 +1095,7 @@ input.dying-heal {
 .dmg-edit { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
 .dmg-edit .dmg-formula { width: 100%; box-sizing: border-box; }
 .dmg-edit .dmg-formula.bad { outline: 2px solid #e5484d; }
+
+/* Pontos de vida dentro do cartão do topo da Ficha */
+.head-card .hp-inline { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; min-width: 0; }
+.head-card .hp-inline > * { min-width: 0; box-sizing: border-box; }

@@ -14,6 +14,8 @@ export interface FeatInfo {
   traits: string[];
   prerequisites: string[];
   description: string[];
+  /** Linhas extras do cartão (equipamento: Preço, Volume, Uso, Dano…). */
+  facts?: [string, string][];
 }
 
 export interface FeatContext {
@@ -136,6 +138,73 @@ export async function fetchFeat(
   );
   const hit = found.find((j) => j && j.system);
   const info = hit ? parseFeat(hit) : null;
+  memory.set(key, info);
+  if (info) {
+    try {
+      localStorage.setItem(key, JSON.stringify(info));
+    } catch {
+      /* ok */
+    }
+  }
+  return info;
+}
+
+/* ---------- equipamento ---------- */
+const priceText = (p: any): string => {
+  const v = p?.value ?? {};
+  const parts = (["pp", "gp", "sp", "cp"] as const).filter((k) => v[k]).map((k) => `${v[k]} ${k}`);
+  return parts.join(" ") || "";
+};
+const bulkText = (b: any): string => {
+  const n = b?.value;
+  if (n === undefined || n === null) return "";
+  return n === 0 ? "—" : n < 1 ? "L" : String(n);
+};
+
+export function parseEquipment(json: any): FeatInfo {
+  const sys = json.system ?? {};
+  const facts: [string, string][] = [];
+  const price = priceText(sys.price);
+  if (price) facts.push(["Preço", price]);
+  const bulk = bulkText(sys.bulk);
+  if (bulk) facts.push(["Volume", bulk]);
+  if (sys.usage?.value) facts.push(["Uso", String(sys.usage.value).replace(/-/g, " ")]);
+  if (sys.damage?.die) facts.push(["Dano", `${sys.damage.dice ?? 1}${sys.damage.die} ${sys.damage.damageType ?? ""}`.trim()]);
+  if (sys.group) facts.push(["Grupo", String(sys.group)]);
+  if (typeof sys.acBonus === "number") facts.push(["Bônus de CA", `+${sys.acBonus}`]);
+  if (typeof sys.dexCap === "number") facts.push(["Limite de Des", `+${sys.dexCap}`]);
+  if (typeof sys.strength === "number" && sys.strength > 0) facts.push(["Força", String(sys.strength)]);
+  const rarity = sys.traits?.rarity && sys.traits.rarity !== "common" ? [String(sys.traits.rarity)] : [];
+  return {
+    name: String(json.name ?? ""),
+    level: typeof sys.level?.value === "number" && sys.level.value > 0 ? sys.level.value : undefined,
+    actions: "",
+    traits: [...rarity, ...(Array.isArray(sys.traits?.value) ? sys.traits.value : [])],
+    prerequisites: [],
+    description: paragraphs(String(sys.description?.value ?? "")),
+    facts,
+  };
+}
+
+/** Item de equipamento do Foundry (pasta única "equipment"), pelo nome-base. `null` se não achar. */
+export async function fetchEquipment(name: string): Promise<FeatInfo | null> {
+  const slug = slugify(sans(name));
+  const key = `pf2e.gear1:${slug}`;
+  if (memory.has(key)) return memory.get(key)!;
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      const v = JSON.parse(raw) as FeatInfo;
+      memory.set(key, v);
+      return v;
+    }
+  } catch {
+    /* sem cache */
+  }
+  const json = await fetch(`${RAW}/equipment/${slug}.json`)
+    .then((r) => (r.ok ? r.json() : null))
+    .catch(() => null);
+  const info = json?.system ? parseEquipment(json) : null;
   memory.set(key, info);
   if (info) {
     try {

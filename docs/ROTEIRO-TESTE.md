@@ -361,3 +361,9 @@ A aba **Morrendo** agora também aparece (sem abrir sozinha) **enquanto a pessoa
 3. Desligue a rede e conjure de novo: continua funcionando com o que ficou guardado.
 4. Edite a fórmula e clique em **Sugerir correção**: o texto pronto (nome, `ações@rank`, fórmula) é copiado para colar no arquivo do repositório.
 5. Para adicionar uma magia: crie `public/spell-fixes/<nome-da-magia>.json`, inclua o nome no `index.json`, aumente a `version` e rode `npm run check:fixes`.
+
+### 59. Celular: o painel fecha enquanto você toca no token
+1. No celular, na Ficha, toque em **Vincular ao token selecionado**: o painel fecha. Toque no token no mapa: ele é vinculado e o painel volta com a mensagem. (Também vale para **Desvincular**, e para **Vincular** nas criaturas do mestre.)
+2. Toque em **Ataque** (ou numa manobra, ou numa magia de um alvo): o painel fecha, você toca no alvo e o painel volta já com "deseja rolar?". O mesmo vale para o ataque de uma criatura do mestre.
+3. Magia de área não fecha o painel (precisa dele para posicionar a área e Resolver).
+4. Abrir o painel à mão antes de tocar no token cancela a espera. No computador nada muda (usa o token selecionado).

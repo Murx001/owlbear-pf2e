@@ -61,4 +61,23 @@ export interface Character {
   feats: { name: string; type: string; level: number }[];
   /** Características de classe, ancestralidade etc. (campo `specials` do Pathbuilder). */
   specials?: string[];
+  /** Equipamento da ficha (armas, armadura, itens e dinheiro). */
+  gear?: Gear;
+}
+
+export interface GearItem {
+  /** Nome-base, usado para achar a descrição no Foundry ("Bastard Sword"). */
+  name: string;
+  /** Como aparece na ficha ("+1 Striking Bastard Sword"). */
+  label: string;
+  qty: number;
+  /** "vestida", "investido", "na Mochila"… */
+  note?: string;
+}
+
+export interface Gear {
+  weapons: GearItem[];
+  armor: GearItem[];
+  items: GearItem[];
+  money?: { pp: number; gp: number; sp: number; cp: number };
 }

@@ -22,6 +22,7 @@ import {
   type CreatureAttack,
 } from "./creatures";
 import OBR from "@owlbear-rodeo/sdk";
+import { whenTokenTapped } from "./tokenTap";
 import {
   NO_GROUP,
   allGroups,
@@ -519,7 +520,7 @@ export function initCreatures(
     sum.append(
       star,
       name,
-      summaryButton("Vincular", () => linkSelected(c), "link"),
+      summaryButton("Vincular", () => whenTokenTapped(() => linkSelected(c)), "link"),
       trashButton(
         "Remover do bestiário",
         () => {
@@ -538,7 +539,7 @@ export function initCreatures(
     body.append(statBlock(c));
     const actions = el("div", "import wrap");
     actions.append(
-      button("Vincular aos tokens selecionados", () => linkSelected(c)),
+      button("Vincular aos tokens selecionados", () => whenTokenTapped(() => linkSelected(c))),
       button("Editar", () => {
         editing = c;
         render();

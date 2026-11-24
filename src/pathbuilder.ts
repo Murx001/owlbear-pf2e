@@ -1,4 +1,4 @@
-import type { Ability, Attack, Caster, Character, SpellList, Stat } from "./character";
+import type { Ability, Attack, Caster, Character, Gear, SpellList, Stat } from "./character";
 
 const ENDPOINT = "https://pathbuilder2e.com/json.php?id=";
 
@@ -125,6 +125,34 @@ export function toCharacter(b: Raw, pathbuilderId?: string): Character {
     level: Number(f[3] ?? 0),
   }));
 
+  const containers = (b.equipmentContainers as Record<string, { containerName?: string }>) ?? {};
+  const gear: Gear = {
+    weapons: ((b.weapons as Raw[]) ?? []).map((w) => ({
+      name: String(w.name),
+      label: String(w.display ?? w.name),
+      qty: Number(w.qty ?? 1) || 1,
+    })),
+    armor: ((b.armor as Raw[]) ?? []).map((a) => ({
+      name: String(a.name),
+      label: String(a.display ?? a.name),
+      qty: Number(a.qty ?? 1) || 1,
+      note: a.worn ? "vestida" : undefined,
+    })),
+    // [nome, quantidade, (id da bolsa), "Invested" | "Not Invested"]
+    items: ((b.equipment as unknown[][]) ?? []).map((e) => {
+      const rest = e.slice(2).map(String);
+      const bag = rest.find((x) => containers[x])
+      const notes = [bag ? `em ${containers[bag].containerName ?? "bolsa"}` : "", rest.includes("Invested") ? "investido" : ""];
+      return {
+        name: String(e[0]),
+        label: String(e[0]),
+        qty: Number(e[1] ?? 1) || 1,
+        note: notes.filter(Boolean).join(", ") || undefined,
+      };
+    }),
+    money: b.money ? { pp: Number(b.money.pp ?? 0), gp: Number(b.money.gp ?? 0), sp: Number(b.money.sp ?? 0), cp: Number(b.money.cp ?? 0) } : undefined,
+  };
+
   return {
     source: "pathbuilder-json",
     pathbuilderId,
@@ -158,5 +186,6 @@ export function toCharacter(b: Raw, pathbuilderId?: string): Character {
     languages: b.languages ?? [],
     feats,
     specials: ((b.specials as unknown[]) ?? []).map(String),
+    gear,
   };
 }
