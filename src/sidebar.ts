@@ -30,21 +30,40 @@ function spot(w: number, h: number) {
 let panelOpen = false;
 export const isLogOpen = async () => panelOpen;
 
+/** Tamanho da tela do Owlbear; se ele não responder (celular), usa o da própria página. */
+async function viewportSize(): Promise<[number, number]> {
+  try {
+    return await Promise.all([OBR.viewport.getWidth(), OBR.viewport.getHeight()]);
+  } catch {
+    return [window.innerWidth || 390, window.innerHeight || 800];
+  }
+}
+
 async function openButton() {
-  const [w, h] = await Promise.all([OBR.viewport.getWidth(), OBR.viewport.getHeight()]);
-  await OBR.popover.open({
+  const [w, h] = await viewportSize();
+  const base = {
     id: LOG_BUTTON,
     url: asset("logbtn.html"),
     width: 52,
     height: 52,
-    anchorReference: "POSITION",
+    anchorReference: "POSITION" as const,
     // Canto inferior direito, logo à esquerda da escala (5ft) do Owlbear.
     anchorPosition: spot(w, h).button,
-    anchorOrigin: { horizontal: "RIGHT", vertical: "BOTTOM" },
-    transformOrigin: { horizontal: "RIGHT", vertical: "BOTTOM" },
-    hidePaper: true,
-    disableClickAway: true,
-  });
+    anchorOrigin: { horizontal: "RIGHT" as const, vertical: "BOTTOM" as const },
+    transformOrigin: { horizontal: "RIGHT" as const, vertical: "BOTTOM" as const },
+  };
+  // Algumas telas (celular) recusam certas opções: tenta da mais completa para a mais simples.
+  const variants = [{ ...base, hidePaper: true, disableClickAway: true }, { ...base, hidePaper: true }, base];
+  let last: unknown;
+  for (const v of variants) {
+    try {
+      await OBR.popover.open(v);
+      return;
+    } catch (e) {
+      last = e;
+    }
+  }
+  throw last;
 }
 
 async function openPanel() {
@@ -75,8 +94,19 @@ export async function initSidebar() {
     }
     else await openPanel();
   });
-  await openButton().catch((e) => {
-    console.error("PF2e: botão do histórico", e);
-    void OBR.notification.show("PF2e: não consegui abrir o botão do histórico. Recarregue a página.", "WARNING");
-  });
+  // Na primeira vez a sala pode ainda não estar pronta (celular): tenta de novo antes de avisar.
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      await openButton();
+      return;
+    } catch (e) {
+      console.error("PF2e: botão do histórico", e);
+      if (attempt === 3) {
+        const why = e instanceof Error ? e.message : typeof e === "string" ? e : JSON.stringify(e);
+        void OBR.notification.show(`PF2e: não consegui abrir o botão do histórico (${why || "erro desconhecido"}). Recarregue a página.`, "WARNING");
+      } else {
+        await new Promise((r) => setTimeout(r, 1500 * attempt));
+      }
+    }
+  }
 }

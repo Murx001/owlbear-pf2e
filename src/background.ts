@@ -455,7 +455,7 @@ OBR.onReady(async () => {
   await initAreaTool();
   // Histórico: guarda rolagens e avisos (mesmo com a barra fechada) e mostra o botão de pergaminho.
   listenRolls(isLogOpen);
-  await initSidebar();
+  void initSidebar(); // sem esperar: as tentativas do botão não atrasam o resto
   // Cartão mostrado por outra pessoa ("Mostrar a todos"): abre no meio da tela.
   OBR.broadcast.onMessage(CARD_SHARE, (event) => void showCard(event.data as CardData));
   schedule();
