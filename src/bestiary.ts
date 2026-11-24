@@ -1,4 +1,11 @@
-import type { Creature, CreatureAbility, CreatureAttack, CreatureFeature } from "./creatures";
+import type {
+  Creature,
+  CreatureAbility,
+  CreatureAttack,
+  CreatureFeature,
+  CreatureSpell,
+  CreatureSpellEntry,
+} from "./creatures";
 import { parseFeat } from "./featData";
 
 /**
@@ -140,6 +147,38 @@ export function featuresFromFoundry(items: any[]): CreatureFeature[] {
     .filter((f) => f.description.length > 0 || f.actions);
 }
 
+/**
+ * Listas de conjuração do NPC (item "spellcastingEntry") e as magias de cada uma. A CD e o ataque vêm
+ * prontos da ficha; o rank é o do espaço (ou o elevado). Truques sobem com metade do nível.
+ */
+export function spellEntriesFromFoundry(items: any[], level: number): CreatureSpellEntry[] {
+  const kinds: Record<string, CreatureSpellEntry["kind"]> = { innate: "innate", prepared: "prepared", spontaneous: "spontaneous", focus: "focus" };
+  const out: CreatureSpellEntry[] = [];
+  for (const e of items.filter((i) => i.type === "spellcastingEntry")) {
+    const spells: CreatureSpell[] = items
+      .filter((i) => i.type === "spell" && i.system?.location?.value === e._id)
+      .map((i) => {
+        const cantrip = (i.system?.traits?.value ?? []).includes("cantrip");
+        const base = Number(i.system?.location?.heightenedLevel ?? i.system?.level?.value ?? 1) || 1;
+        const max = Number(i.system?.location?.uses?.max ?? 0);
+        const sp: CreatureSpell = { name: String(i.name), rank: cantrip ? Math.max(1, Math.ceil(level / 2)) : base };
+        if (cantrip) sp.cantrip = true;
+        if (max > 0) sp.maxUses = max;
+        return sp;
+      });
+    if (spells.length === 0) continue;
+    out.push({
+      name: String(e.name),
+      kind: kinds[String(e.system?.prepared?.value ?? "")] ?? "other",
+      tradition: e.system?.tradition?.value ? String(e.system.tradition.value) : undefined,
+      dc: Number(e.system?.spelldc?.dc ?? 10) || 10,
+      attack: Number(e.system?.spelldc?.value ?? 0) || 0,
+      spells,
+    });
+  }
+  return out;
+}
+
 /** Converte um arquivo NPC do Foundry numa criatura do bestiário. */
 export function foundryToCreature(json: any, id: string, packLabel: string, packDir: string): Creature {
   const s = json.system ?? {};
@@ -185,6 +224,8 @@ export function foundryToCreature(json: any, id: string, packLabel: string, pack
   if (abil.length) c.abilities = abil;
   const feats = featuresFromFoundry(json.items ?? []);
   if (feats.length) c.features = feats;
+  const entries = spellEntriesFromFoundry(json.items ?? [], c.level ?? 0);
+  if (entries.length) c.spellEntries = entries;
   return c;
 }
 

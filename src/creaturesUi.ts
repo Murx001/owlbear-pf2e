@@ -10,7 +10,11 @@ import {
   creatureSave,
   featuresOf,
   getCreature,
+  spellEntriesOf,
+  spellUseKey,
   type CreatureFeature,
+  type CreatureSpell,
+  type CreatureSpellEntry,
   damageCreature,
   isInstance,
   loadCreatures,
@@ -45,6 +49,9 @@ import { COND_BY_KEY, CONDITIONS } from "./conditions";
 import { durationLabel, pruneDurations } from "./durations";
 import { showCard } from "./cardView";
 import { aonSearch } from "./featData";
+import { damageParts, fetchSpell } from "./spellData";
+import { prefetchFixes } from "./spellFixes";
+import type { SpellCast } from "./saveSpell";
 import { BESTIARY_LINK, closeBestiary, openBestiary } from "./bestiaryView";
 import {
   attacksMade,
@@ -154,6 +161,8 @@ export function initCreatures(
   part: CreaturesPart = "all",
   /** Mestre: usar uma habilidade pelo mesmo sistema de alvos dos jogadores (faixa de alvos no mapa). */
   onUseAbility?: (c: Creature, a: CreatureAbility) => void,
+  /** Mestre: conjurar uma magia da criatura pelo mesmo sistema de alvos e áreas dos jogadores. */
+  onCastSpell?: (c: Creature, cast: SpellCast, mode: "save" | "auto" | "heal" | "temp", consume: () => void) => void,
 ) {
   const showBestiary = part !== "play";
   const showPlay = part !== "bestiary";
@@ -553,8 +562,96 @@ export function initCreatures(
           const found = await findFoundryCreature(owner.name, () => owner.id).catch(() => null);
           const feats = found?.creature.features;
           if (!feats?.length) return say(`Não achei habilidades de "${owner.name}" no Foundry.`);
-          upsertCreature({ ...owner, features: feats, abilities: owner.abilities?.length ? owner.abilities : found?.creature.abilities });
+          upsertCreature({
+            ...owner,
+            features: feats,
+            spellEntries: found?.creature.spellEntries,
+            abilities: owner.abilities?.length ? owner.abilities : found?.creature.abilities,
+          });
           say(`${feats.length} habilidades guardadas em ${owner.name}.`);
+          render();
+        }),
+      );
+    }
+    return box;
+  }
+
+  /** Conta um uso da magia (só as que têm limite por dia, como as inatas). */
+  function spendSpell(c: Creature, e: CreatureSpellEntry, sp: CreatureSpell) {
+    if (!sp.maxUses) return;
+    const fresh = getCreature(c.id) ?? c;
+    const key = spellUseKey(e.name, sp.name);
+    upsertCreature({ ...fresh, spellUses: { ...fresh.spellUses, [key]: (fresh.spellUses?.[key] ?? 0) + 1 } });
+    render();
+  }
+
+  /**
+   * Conjura uma magia da criatura: busca as regras no Foundry e usa o sistema dos jogadores (alvos no
+   * mapa, área, salvaguarda de cada alvo, dano e condições). Magia de ataque usa o ataque da criatura.
+   */
+  async function castCreatureSpell(c: Creature, e: CreatureSpellEntry, sp: CreatureSpell) {
+    say(`Buscando as regras de ${sp.name}…`);
+    await prefetchFixes([sp.name]);
+    const data = await fetchSpell(sp.name, sp.cantrip ? 0 : sp.rank, "", false).catch(() => null);
+    if (!data) return say(`Não achei as regras de "${sp.name}" no Foundry.`);
+    const cast: SpellCast = {
+      casterName: publicLink(c).name,
+      casterId: c.id,
+      casterColor: await OBR.player.getColor(),
+      spell: data,
+      rank: sp.rank,
+      dc: e.dc,
+      abilityMod: 0,
+    };
+    const consume = () => spendSpell(c, e, sp);
+    const parts = damageParts(data, sp.rank, 0);
+    say("");
+    if (data.save) return void onCastSpell?.(c, cast, "save", consume);
+    if (data.tempHp) return void onCastSpell?.(c, cast, "temp", consume);
+    if (parts && parts.length > 0) {
+      if (data.healing) return void onCastSpell?.(c, cast, "heal", consume);
+      if (data.attack) {
+        const p = parts[0];
+        const bonus = p.bonus ? (p.bonus > 0 ? `+${p.bonus}` : String(p.bonus)) : "";
+        const attack: CreatureAttack = { name: sp.name, bonus: e.attack, damage: `${p.count}d${p.die}${bonus} ${p.type}`.trim(), traits: ["spell"] };
+        beginCreatureAttack(c, attack, { extra: 0, flanked: false }, (t) => say(t), () => {
+          consume();
+          render();
+        });
+        return render();
+      }
+      return void onCastSpell?.(c, cast, "auto", consume);
+    }
+    consume();
+    say(`${sp.name} conjurada. Sem dano nem salvaguarda automáticos: aplique o efeito à mão.`);
+  }
+
+  /** Listas de magia da criatura (do Foundry): um botão Conjurar por magia, com os usos por dia. */
+  function spellBlock(c: Creature): HTMLElement {
+    const box = el("div", "visibility");
+    const entries = spellEntriesOf(c);
+    if (entries.length === 0) {
+      box.append(el("p", "sub", "Sem magias guardadas. Em criaturas do Foundry, use Buscar do Foundry em Habilidades (texto)."));
+      return box;
+    }
+    for (const e of entries) {
+      box.append(el("div", "feat-title", `${e.name} · CD ${e.dc} · ataque ${signed(e.attack)}`));
+      for (const sp of e.spells) {
+        const used = c.spellUses?.[spellUseKey(e.name, sp.name)] ?? 0;
+        const left = sp.maxUses ? sp.maxUses - used : undefined;
+        const tag = sp.cantrip ? "truque" : `rank ${sp.rank}`;
+        const b = button(`Conjurar: ${sp.name} (${tag})${left !== undefined ? ` · ${left}/${sp.maxUses}` : ""}`, () => void castCreatureSpell(c, e, sp));
+        b.disabled = left !== undefined && left <= 0;
+        b.title = left !== undefined && left <= 0 ? "Sem usos restantes" : "Escolha o alvo ou a área no mapa";
+        const row = el("div", "import");
+        row.append(b);
+        box.append(row);
+      }
+    }
+    if (Object.values(c.spellUses ?? {}).some((n) => n > 0)) {
+      box.append(
+        button("Restaurar usos", () => {
+          upsertCreature({ ...c, spellUses: {} });
           render();
         }),
       );
@@ -1252,6 +1349,7 @@ export function initCreatures(
     if ((c.attacks ?? []).length > 0) body.append(fold(c, "atk", "Ataques", attackBlock(c), c.attacks!.length));
     body.append(fold(c, "abil", "Habilidades", abilityBlock(c), (c.abilities ?? []).length));
     body.append(fold(c, "feat", "Habilidades (texto)", featureBlock(c), featuresOf(c).length));
+    if (spellEntriesOf(c).length > 0) body.append(fold(c, "spells", "Magias", spellBlock(c), spellEntriesOf(c).reduce((n, e) => n + e.spells.length, 0)));
     body.append(fold(c, "cond", "Aplicar condição", conditionAdder(c)));
 
     // Ficha completa (traços, defesas, ataques, notas), como a do bestiário.

@@ -393,3 +393,11 @@ A aba **Morrendo** agora também aparece (sem abrir sozinha) **enquanto a pessoa
 3. As instâncias (Goblin 1, 2…) mostram o mesmo texto do modelo.
 4. Criatura importada **antes** desta versão: o grupo diz que o texto não foi guardado; **Buscar do Foundry** traz as habilidades sem mexer em PV, condições nem vínculo com o token.
 5. Criatura cadastrada à mão: mostra "Nenhuma habilidade com texto" e não tem o botão do Foundry.
+
+### 64. Magias das criaturas (Conjurar)
+1. Importe uma criatura conjuradora do Foundry (ex.: Adult Blue Dragon, Lich) e crie a instância num token. Se ela já estava importada: em **Habilidades (texto)** use **Buscar do Foundry** no modelo.
+2. A instância ganha o grupo **Magias**, com cada lista (CD e ataque) e um botão **Conjurar** por magia. Magias inatas por dia mostram os usos (ex.: 2/2).
+3. **Conjurar** uma magia de salvaguarda/área (ex.: Fireball): escolha os alvos ou a área no mapa, confirme a caixa "deseja rolar?" (dano ajustável), e cada alvo rola a salvaguarda contra a CD da lista; o dano e as condições são aplicados.
+4. Magia de ataque (ex.: Ray of Frost): usa o ataque de magia da lista contra a CA do alvo.
+5. Cancelar na caixa de confirmação **não** gasta o uso. Confirmar gasta; com 0 usos o botão fica desativado; **Restaurar usos** devolve todos.
+6. Os jogadores não veem a lista de magias da criatura.

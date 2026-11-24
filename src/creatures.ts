@@ -78,7 +78,40 @@ export interface Creature {
   abilities?: CreatureAbility[];
   /** Habilidades e características com o texto do Foundry (passivas, reações, ações): cada uma abre um cartão. */
   features?: CreatureFeature[];
+  /** Listas de conjuração do Foundry (inatas, preparadas, espontâneas) com a CD e o ataque de magia. */
+  spellEntries?: CreatureSpellEntry[];
+  /** Usos já gastos das magias com limite (inatas por dia), por "lista:magia". Cada instância tem os seus. */
+  spellUses?: Record<string, number>;
 }
+
+/** Lista de conjuração de uma criatura (ex.: "Magias Inatas Arcanas", CD 22, ataque +14). */
+export interface CreatureSpellEntry {
+  name: string;
+  kind: "innate" | "prepared" | "spontaneous" | "focus" | "other";
+  tradition?: string;
+  dc: number;
+  /** Bônus de ataque de magia. */
+  attack: number;
+  spells: CreatureSpell[];
+}
+
+export interface CreatureSpell {
+  name: string;
+  /** Rank em que a criatura conjura (com intensificar); para truque, metade do nível arredondada para cima. */
+  rank: number;
+  cantrip?: boolean;
+  /** Usos por dia (magias inatas "2×"); sem valor = sem limite. */
+  maxUses?: number;
+}
+
+/** Listas de magias; as instâncias usam as do modelo. */
+export function spellEntriesOf(c: Creature): CreatureSpellEntry[] {
+  if (c.spellEntries?.length) return c.spellEntries;
+  return c.templateId ? (getCreature(c.templateId)?.spellEntries ?? []) : [];
+}
+
+/** Chave do contador de usos de uma magia numa lista. */
+export const spellUseKey = (entry: string, spell: string) => `${entry}:${spell}`;
 
 /** Uma habilidade da criatura como aparece na ficha: o texto em inglês do Foundry, pronto para o cartão. */
 export interface CreatureFeature {
@@ -139,6 +172,8 @@ export function makeInstances(template: Creature, existing: Creature[], tokenIds
     id: `cr-${crypto.randomUUID()}`,
     name: `${template.name} ${++n}`,
     features: undefined,
+    spellEntries: undefined,
+    spellUses: {},
     hp: template.hpMax,
     temp: 0,
     conditions: {},

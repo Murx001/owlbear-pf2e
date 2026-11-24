@@ -2417,7 +2417,7 @@ OBR.onReady(async () => {
     $("#creatures-tab").hidden = false;
     // Em produção o painel mostra só as criaturas em jogo; os testes de tela podem pedir tudo junto.
     const part = (window as unknown as { __PF2E_PART?: "play" | "all" }).__PF2E_PART ?? "play";
-    creaturesUi = initCreatures($("#gm-creatures"), () => renderMasterHud(), part, (c, a) => void useCreatureAbility(c, a));
+    creaturesUi = initCreatures($("#gm-creatures"), () => renderMasterHud(), part, (c, a) => void useCreatureAbility(c, a), (c, cast, mode, consume) => void askSpellTarget(cast.spell.name, cast, mode, consume, c.tokenId));
     isGmRole = true;
     // Celular: o bestiário fecha e pede o vínculo ao painel, que espera o toque no token.
     OBR.broadcast.onMessage(BESTIARY_LINK, (event) => {
