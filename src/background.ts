@@ -2,6 +2,7 @@ import OBR, { buildPath, buildShape, buildText, type Item } from "@owlbear-rodeo
 import { initAreaTool } from "./areaTool";
 import { listenRolls } from "./logStore";
 import { initSidebar, isLogOpen } from "./sidebar";
+import { initTokenMenu } from "./tokenMenu";
 import { CARD_SHARE, type CardData } from "./cardData";
 import { showCard } from "./cardView";
 import { condTags, type ConditionTag } from "./conditions";
@@ -455,6 +456,7 @@ OBR.onReady(async () => {
   await initAreaTool();
   // Histórico: guarda rolagens e avisos (mesmo com a barra fechada) e mostra o botão de pergaminho.
   listenRolls(isLogOpen);
+  if (isGM) void initTokenMenu().catch((e) => console.error("PF2e: menu do token", e)); // Horda e Condições nos 3 pontinhos
   void initSidebar(); // sem esperar: as tentativas do botão não atrasam o resto
   // Cartão mostrado por outra pessoa ("Mostrar a todos"): abre no meio da tela.
   OBR.broadcast.onMessage(CARD_SHARE, (event) => void showCard(event.data as CardData));

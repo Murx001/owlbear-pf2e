@@ -374,3 +374,10 @@ A aba **Morrendo** agora também aparece (sem abrir sozinha) **enquanto a pessoa
 2. Arraste o botão para onde preferir e toque em **Pronto**. O botão volta para a posição escolhida, e o painel do histórico abre acima dele.
 3. A posição fica guardada neste navegador, até para a próxima vez que abrir a sala. **Posição padrão** na mesma tela devolve o botão ao canto inferior direito.
 4. Um toque curto continua abrindo e fechando o histórico, como antes.
+
+### 61. Menu de 3 pontinhos do token: Horda e Condições (só o mestre)
+1. Selecione um token e abra o menu de 3 pontinhos: aparecem **PF2e: Horda** (com um token só) e **PF2e: Condições** (com um ou vários).
+2. **Horda** num token sem criatura: escolha o modelo do bestiário e a quantidade total (ex.: 4). O token vira o nº 1 e surgem 3 clones nas casas livres ao redor, com fichas "Goblin 2, 3, 4", PV próprios. Aparecem em "Em jogo".
+3. **Horda** num token que já é "Goblin 1": ele fica, e os clones continuam a numeração (se já existe Goblin 3, os novos são 4, 5…).
+4. Os clones seguem a visibilidade do token original (um token escondido gera clones escondidos).
+5. **Condições**: selecione 2 ou 3 tokens (criaturas e/ou personagens), abra o menu e ponha Amedrontado 2: vale para todos, a CA do personagem se ajusta, e as fichinhas aparecem no token se a criatura mostra condições. **−** até 0 tira a condição; condições sem valor têm **Aplicar/Tirar**. O "~" indica que os tokens têm valores diferentes.

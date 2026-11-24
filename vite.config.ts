@@ -63,6 +63,8 @@ export default defineConfig({
         log: resolve(__dirname, "log.html"),
         logbtn: resolve(__dirname, "logbtn.html"),
         move: resolve(__dirname, "move.html"),
+        horde: resolve(__dirname, "horde.html"),
+        conditions: resolve(__dirname, "conditions.html"),
         bestiary: resolve(__dirname, "bestiary.html"),
       },
     },
