@@ -15,6 +15,7 @@ import {
 import { COND_BY_KEY, withConditions } from "./conditions";
 import { tickDurations, type DurationHost, type TickEvent } from "./durations";
 import { showCard } from "./cardView";
+import { goToToken, tokenForCombatant } from "./focusToken";
 import { getCreature, loadCreatures, upsertCreature } from "./creatures";
 import { resetCreatureMaps } from "./creatureAttack";
 import { publishEvent, publishRoll } from "./roll";
@@ -250,7 +251,29 @@ export async function initCombat(root: HTMLElement, deps: CombatDeps) {
     const list = el("ol", "order");
     combat.list.forEach((x, i) => {
       const li = el("li", combat.active && i === combat.turn ? "current" : undefined);
-      li.append(el("span", "v", String(x.value)), el("span", "n", x.name));
+      const nameEl = el("span", "n", x.name);
+      // Tocar no nome leva a tela até o token (e, no celular, fecha o painel).
+      nameEl.style.cursor = "pointer";
+      nameEl.title = "Ir até o token";
+      nameEl.addEventListener("click", async () => {
+        try {
+          const tokenId = await tokenForCombatant(x);
+          if (!tokenId) {
+            message = `${x.name} não tem token vinculado no mapa.`;
+            render();
+            return;
+          }
+          if (message) {
+            message = "";
+            render();
+          }
+          await goToToken(tokenId);
+        } catch {
+          message = "Não foi possível ir até o token.";
+          render();
+        }
+      });
+      li.append(el("span", "v", String(x.value)), nameEl);
       const mine = x.pathbuilderId !== undefined && x.pathbuilderId === deps.getCharacter()?.pathbuilderId;
       if (isGM || mine) {
         li.append(button("×", () => write(removeCombatant(combat, x.id)), "mini"));

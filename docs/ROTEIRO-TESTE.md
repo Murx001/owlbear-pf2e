@@ -381,3 +381,8 @@ A aba **Morrendo** agora também aparece (sem abrir sozinha) **enquanto a pessoa
 3. **Horda** num token que já é "Goblin 1": ele fica, e os clones continuam a numeração (se já existe Goblin 3, os novos são 4, 5…).
 4. Os clones seguem a visibilidade do token original (um token escondido gera clones escondidos).
 5. **Condições**: selecione 2 ou 3 tokens (criaturas e/ou personagens), abra o menu e ponha Amedrontado 2: vale para todos, a CA do personagem se ajusta, e as fichinhas aparecem no token se a criatura mostra condições. **−** até 0 tira a condição; condições sem valor têm **Aplicar/Tirar**. O "~" indica que os tokens têm valores diferentes.
+
+### 62. Iniciativa: tocar na criatura leva a tela até o token
+1. Na aba **Combate**, toque no **nome** de quem está na ordem de iniciativa (criatura ou personagem).
+2. A tela anda até o token dele (mantendo o zoom), o token fica selecionado e, **no celular**, o painel fecha para o mapa ficar à vista. No computador o painel continua aberto.
+3. A aba não muda sozinha (a seleção feita pelo toque não abre a ficha). Quem não tem token no mapa mostra "não tem token vinculado".

@@ -56,6 +56,7 @@ import {
 import { damageParts, fetchSpell, tempHpAmount, type SpellData } from "./spellData";
 import { prefetchFixes, suggestionText } from "./spellFixes";
 import { BESTIARY_LINK } from "./bestiaryView";
+import { isFocusingToken } from "./focusToken";
 import { closeForTap, onPanelOpened, reopenAfterTap, takeTap, whenTokenTapped } from "./tokenTap";
 import { actionRange, defaultFormula, parseFormulas, saveFormula, savedFormula } from "./spellTweak";
 import { pcSaveTarget } from "./targets";
@@ -2486,6 +2487,9 @@ OBR.onReady(async () => {
     const key = (player.selection ?? []).join(",");
     if (key === lastSelection) return;
     lastSelection = key;
+
+    // Fomos nós que selecionamos (ir até o token pela iniciativa): não abre ficha nem troca de aba.
+    if (isFocusingToken()) return;
 
     // Celular: ação esperando o toque (vincular) roda agora; tocar num alvo reabre o painel para confirmar.
     const tapped = player.selection ?? [];
