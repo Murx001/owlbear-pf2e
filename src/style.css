@@ -1099,3 +1099,11 @@ input.dying-heal {
 /* Pontos de vida dentro do cartão do topo da Ficha */
 .head-card .hp-inline { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; min-width: 0; }
 .head-card .hp-inline > * { min-width: 0; box-sizing: border-box; }
+
+/* Ficha: espaço entre as seções e botões de PV menores para caber tudo (inclui Temp.) */
+#sheet-ficha { display: flex; flex-direction: column; gap: 10px; }
+.head-card .hp-inline .quick { gap: 6px; margin: 0; }
+.head-card .hp-inline .quick button { min-height: 38px; font-size: 15px; padding: 4px 6px; }
+.head-card .hp-inline .import { gap: 6px; flex-wrap: nowrap; }
+.head-card .hp-inline .import input { flex: 1 1 0; min-width: 0; width: 0; min-height: 40px; }
+.head-card .hp-inline .import button { flex: 0 0 auto; min-height: 40px; padding: 4px 10px; font-size: 14px; }
