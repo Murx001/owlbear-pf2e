@@ -1,0 +1,9 @@
+{
+  "name": "Force Barrage",
+  "note": "Um projétil por ação gasta (1d4+1 force cada). Rank 1; nos outros ranks vale a tabela do aplicativo.",
+  "formulas": {
+    "1@1": "1d4+1 force",
+    "2@1": "1d4+1 force; 1d4+1 force",
+    "3@1": "1d4+1 force; 1d4+1 force; 1d4+1 force"
+  }
+}

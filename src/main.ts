@@ -54,6 +54,7 @@ import {
   type SpellTargetResult,
 } from "./saveSpell";
 import { damageParts, fetchSpell, tempHpAmount, type SpellData } from "./spellData";
+import { prefetchFixes, suggestionText } from "./spellFixes";
 import { actionRange, defaultFormula, parseFormulas, saveFormula, savedFormula } from "./spellTweak";
 import { pcSaveTarget } from "./targets";
 import {
@@ -451,6 +452,13 @@ function confirmRoll(
         button("Padrão", () => {
           saveFormula(dmg.spell, dmg.rank, chosenActions, null);
           refresh();
+        }, "mini"),
+        button("Sugerir correção", () => {
+          const txt = suggestionText(dmg.spell.name, dmg.rank, chosenActions, formulaInput!.value.trim());
+          void navigator.clipboard?.writeText(txt).then(
+            () => say("Correção copiada. Mande para quem cuida do repositório (pasta spell-fixes)."),
+            () => say(`Copie e envie: ${txt}`),
+          );
         }, "mini"),
       );
       refresh();
@@ -2184,6 +2192,7 @@ async function castCore(c: Character, o: CastOpts) {
   };
 
   say(`Procurando as regras de ${name}…`);
+  await prefetchFixes([name]);
   const data = await fetchSpell(name, rank, c.className, o.focusFile).catch(() => null);
   if (!data) {
     spend(true);
@@ -2287,6 +2296,11 @@ async function importById(id: string) {
     renderSheet(c);
     combatUi?.render();
     statusEl.textContent = `Ficha de ${c.name} importada.`;
+    // Correções de dano das magias da ficha: baixa as que existem e guarda no navegador.
+    void prefetchFixes([
+      ...c.focusSpells,
+      ...c.casters.flatMap((k) => [...k.prepared, ...k.known].flatMap((l) => l.names)),
+    ]);
   } catch (e) {
     statusEl.textContent = e instanceof Error ? e.message : "Não foi possível importar a ficha.";
     statusEl.className = "status error";

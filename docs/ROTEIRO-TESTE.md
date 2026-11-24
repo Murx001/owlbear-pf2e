@@ -354,3 +354,10 @@ A aba **Morrendo** agora também aparece (sem abrir sozinha) **enquanto a pessoa
 2. Troque para 3 ações: a fórmula vira três projéteis (`1d4+1 force; 1d4+1 force; 1d4+1 force`). Role e confira o cartão.
 3. Edite a fórmula à mão (ex.: `2d8 fire`), role, e conjure a mesma magia de novo: a fórmula guardada volta sozinha, com o aviso "guardada neste navegador". O botão **Padrão** apaga o ajuste.
 4. Teste com uma magia de ataque (ex.: Needle Darts) e com uma de salvaguarda básica. Fórmula inválida (ex.: `abc`) não rola e destaca o campo.
+
+### 58. Correções de magia vindas do repositório
+1. Importe uma ficha que tenha **Force Barrage**. Em `localStorage` (`pf2e.spell-fixes.data`) aparece a correção; magias que não estão no índice não geram pedido de rede.
+2. Conjure a magia com 1, 2 e 3 ações: a fórmula vem do arquivo `public/spell-fixes/force-barrage.json` (rank 1).
+3. Desligue a rede e conjure de novo: continua funcionando com o que ficou guardado.
+4. Edite a fórmula e clique em **Sugerir correção**: o texto pronto (nome, `ações@rank`, fórmula) é copiado para colar no arquivo do repositório.
+5. Para adicionar uma magia: crie `public/spell-fixes/<nome-da-magia>.json`, inclua o nome no `index.json`, aumente a `version` e rode `npm run check:fixes`.

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "check:fixes": "node scripts/check-spell-fixes.mjs"
   },
   "dependencies": {
     "@owlbear-rodeo/sdk": "^3.1.0"

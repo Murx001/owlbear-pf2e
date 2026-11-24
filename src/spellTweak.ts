@@ -1,5 +1,6 @@
 import { damageParts, slugify, type DamagePart, type SpellData } from "./spellData";
 import type { SpellCast } from "./saveSpell";
+import { fixFormula } from "./spellFixes";
 
 /**
  * Dano de magia que o jogador ajusta na caixa "deseja rolar?": número de ações gastas e fórmula editável.
@@ -58,6 +59,8 @@ export function castParts(cast: SpellCast): DamagePart[] | null {
 
 /** Fórmula padrão para N ações: a do Foundry, repetida por ação nas magias de projéteis. */
 export function defaultFormula(spell: SpellData, rank: number, abilityMod: number, actions: number): string | null {
+  const fix = fixFormula(spell.name, rank, actions); // a correção do repositório vem antes da tabela
+  if (fix) return fix;
   const base = damageParts(spell, rank, abilityMod);
   if (!base) return null;
   const n = REPEAT_PER_ACTION.has(slugify(spell.name)) ? Math.max(1, actions) : 1;
