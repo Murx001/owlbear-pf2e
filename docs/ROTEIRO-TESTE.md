@@ -446,6 +446,9 @@ A aba **Morrendo** agora também aparece (sem abrir sozinha) **enquanto a pessoa
 3. **Esperado:** o bloco para logo abaixo do cabeçalho fixo (nada fica escondido por ele). Ao **fechar** a engrenagem o painel não rola.
 4. Vale no computador e no celular.
 
+### 74. Magias: bolinhas de espaço junto das magias de cada rank
+Na aba Agir, em "Magias — …", cada rank mostra o título e as **bolinhas de espaço na mesma linha** ("RANK 1 ●●"), com as magias daquele rank logo abaixo. Tocar numa bolinha marca ou desmarca um espaço usado. Truques não têm bolinhas. Um rank com espaços mas sem magia preparada (ex.: rank 3 vazio) aparece só com a linha de bolinhas, depois dos outros. Conjurar uma magia de rank 1 gasta uma bolinha da linha "RANK 1".
+
 ### 73. Celular: aba Combate e altura do painel
 1. Aba **Combate** no celular (360 px): "Rolar iniciativa de …", "Adicionar" e o resto cabem na tela, quebrando linha quando precisa; nenhum botão passa da borda.
 2. O painel no celular **não pode ficar mais alto que a tela**: o tamanho de partida no manifesto é 700 (um valor maior empurrava a barra de alvos e as abas para fora da tela, e não dava para posicionar a área da magia). Só no computador a altura cresce, por código.

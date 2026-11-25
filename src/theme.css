@@ -827,3 +827,7 @@ li.creature .tpl-sum input.init-val { order: 9; flex: 1 0 100%; width: 100%; max
 #tab-combate .import select { flex: 1 1 150px; min-width: 0; }
 #tab-combate .import input[placeholder="Criatura"] { flex: 1 1 120px; min-width: 0; }
 #tab-combate .import button { flex: 1 1 auto; min-width: 0; }
+
+/* Magias: titulo do rank e bolinhas de espaco na mesma linha, junto das magias daquele rank. */
+.spellhead { display: flex; align-items: center; gap: 10px; min-height: 26px; }
+.spellhead .pips { display: inline-flex; margin: 0; }

@@ -1982,28 +1982,33 @@ function renderSheet(c: Character) {
     );
     const lists = caster.prepared.length ? caster.prepared : caster.known;
 
-    // Espaços de magia: uma fileira de marcadores por rank.
-    const slotRows: HTMLElement[] = [];
-    caster.slots.forEach((total, rank) => {
-      if (rank === 0 || total <= 0) return;
+    // Espaços de magia: as bolinhas de cada rank ficam na mesma linha do título do rank, junto das
+    // magias daquele rank (um bloco só por rank, em vez de bolinhas separadas das magias).
+    const slotPips = (rank: number): HTMLElement | null => {
+      const total = caster.slots[rank] ?? 0;
+      if (rank === 0 || total <= 0) return null;
       const used = Math.min(total, state.slotsUsed?.[rank] ?? 0);
-      const row = el("div", "pips");
-      row.append(el("span", "lbl", `Rank ${rank}`));
-      row.append(
+      const wrapPips = el("span", "pips");
+      wrapPips.append(
         ...pips(total, used, (next) => {
           state.slotsUsed = { ...state.slotsUsed, [rank]: next };
           commit(c);
         }),
       );
-      slotRows.push(row);
-    });
+      return wrapPips;
+    };
 
     const spellRows = lists.map((l) => {
       const row = el("div", "spellrow");
-      row.append(el("strong", undefined, l.rank === 0 ? "Truques" : `Rank ${l.rank}`));
+      const head = el("div", "spellhead");
+      head.append(el("strong", undefined, l.rank === 0 ? "Truques" : `Rank ${l.rank}`));
+      const slots = slotPips(l.rank);
+      if (slots) head.append(slots);
+      row.append(head);
       const wrap = el("div", "chips");
       for (const name of l.names) {
-        const b = el("button", "spell", name);
+        // Dourado = gasta recurso (espaço de magia); roxo = truque, não gasta nada.
+        const b = el("button", l.rank === 0 ? "spell" : "spell focus", name);
         b.type = "button";
         b.title = l.rank === 0 ? "Lançar truque" : `Conjurar (gasta um espaço de rank ${l.rank})`;
         b.addEventListener("click", () =>
@@ -2014,14 +2019,27 @@ function renderSheet(c: Character) {
       row.append(wrap);
       return row;
     });
+    // Ranks que têm espaços mas nenhuma magia preparada/conhecida: só a linha com as bolinhas.
+    const listedRanks = new Set(lists.map((l) => l.rank));
+    const emptyRanks: HTMLElement[] = [];
+    caster.slots.forEach((total, rank) => {
+      if (rank === 0 || total <= 0 || listedRanks.has(rank)) return;
+      const row = el("div", "spellrow");
+      const head = el("div", "spellhead");
+      head.append(el("strong", undefined, `Rank ${rank}`));
+      const slots = slotPips(rank);
+      if (slots) head.append(slots);
+      row.append(head);
+      emptyRanks.push(row);
+    });
     agirEl.append(
       section(
         `Magias — ${caster.name}`,
         info,
         ...(c.attacks.length ? [] : [mapRow()]),
         attack,
-        ...slotRows,
         ...spellRows,
+        ...emptyRanks,
       ),
     );
   }
