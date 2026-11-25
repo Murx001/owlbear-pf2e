@@ -2383,13 +2383,10 @@ let isGmRole = false;
 let pinned = false;
 
 OBR.onReady(async () => {
-  // Painel da esquerda: no computador ocupa uma boa parte da tela (o Owlbear limita ao que cabe na
-  // janela); no celular (tela estreita) mantém o tamanho antigo, que já vira tela cheia.
-  const wide = window.screen.availWidth >= 900;
-  const panelW = wide ? Math.round(Math.min(760, Math.max(580, window.screen.availWidth * 0.38))) : 460;
-  const panelH = wide ? Math.round(Math.min(1000, Math.max(760, window.screen.availHeight - 120))) : 700;
-  void Promise.resolve(OBR.action?.setWidth?.(panelW)).catch(() => undefined);
-  void Promise.resolve(OBR.action?.setHeight?.(panelH)).catch(() => undefined);
+  // Painel da esquerda (o manifesto traz o mesmo tamanho para quem ainda não recarregou).
+  // Um tamanho maior no computador deixou o painel em branco na sala, por isso voltou a este.
+  void Promise.resolve(OBR.action?.setWidth?.(460)).catch(() => undefined);
+  void Promise.resolve(OBR.action?.setHeight?.(700)).catch(() => undefined);
   // Abrir o painel à mão cancela a espera pelo toque num token (celular).
   void Promise.resolve(OBR.action?.onOpenChange?.((open: boolean) => open && onPanelOpened())).catch(() => undefined);
   listenAttackAcks();
