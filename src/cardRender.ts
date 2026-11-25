@@ -155,10 +155,21 @@ function spellCard(
     );
   }
 
+  // Erros idênticos (ex.: vários alvos "sem dados") viram um bloco só, com a contagem.
+  const errorCount = new Map<string, number>();
+  for (const r of results) if (r.error) errorCount.set(`${r.target}|${r.error}`, (errorCount.get(`${r.target}|${r.error}`) ?? 0) + 1);
+  const errorShown = new Set<string>();
+
   for (const r of results) {
+    if (r.error) {
+      const key = `${r.target}|${r.error}`;
+      if (errorShown.has(key)) continue;
+      errorShown.add(key);
+    }
     const box = el("div", `card-target${r.save ? ` ${r.save.degree}` : ""}`);
     const title = el("div", "card-row");
-    title.append(strong(r.target));
+    const repeats = r.error ? (errorCount.get(`${r.target}|${r.error}`) ?? 1) : 1;
+    title.append(strong(repeats > 1 ? `${r.target} (${repeats} alvos)` : r.target));
     if (r.save) title.append(el("span", `badge ${r.save.degree}`, DEGREE_TEXT[r.save.degree]));
     box.append(title);
 

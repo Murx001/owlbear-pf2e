@@ -426,3 +426,8 @@ A aba **Morrendo** agora também aparece (sem abrir sozinha) **enquanto a pessoa
 1. Abra a mesma sala em duas abas do mesmo navegador, ambas como mestre.
 2. Faça um ataque contra uma criatura: o histórico mostra **uma só** rolagem (antes aparecia repetida, com dados diferentes) e o dano é aplicado **uma vez**.
 3. Uma rolagem simples (ex.: Percepção) também aparece uma vez no histórico, e o contador de não lidas sobe de 1 em 1.
+
+### 69. Área sem piscar, erros agrupados e aviso do conjurador
+1. **Celular:** conjure uma magia de área (cone, linha ou explosão), toque em **Posicionar área** e arraste o dedo pelo mapa. O contorno acompanha o dedo **sem piscar** (antes sumia e voltava a cada movimento). Ao soltar, a área final fica fixa e os alvos são marcados.
+2. Resolva uma magia de área com vários alvos **sem criatura cadastrada** (ex.: 6 tokens soltos): o cartão mostra **um só bloco** "Alvo (6 alvos) — sem dados", e não seis iguais.
+3. Conjure uma magia de um alvo e clique no **próprio token**: o aviso diz "Esse é o token do próprio conjurador". Num token sem ficha nem criatura: "Esse token não tem ficha nem criatura vinculada".

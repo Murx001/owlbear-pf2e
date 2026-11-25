@@ -916,7 +916,12 @@ async function onTargetPicked(tokenId: string) {
   if (p.kind === "spell") {
     const t = await describeTarget(tokenId, p.mode === "temp");
     if (!t) {
-      say("Esse token não tem ficha nem criatura vinculada (ou é o próprio conjurador). Escolha outro.", true);
+      say(
+        p.casterToken === tokenId
+          ? "Esse é o token do próprio conjurador. Escolha outro alvo."
+          : "Esse token não tem ficha nem criatura vinculada. Escolha outro.",
+        true,
+      );
       return;
     }
     const far = await rangeError(tokenId, t.name);

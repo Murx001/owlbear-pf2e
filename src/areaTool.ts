@@ -1,4 +1,4 @@
-import OBR, { buildPath, Command, type Item, type PathCommand } from "@owlbear-rodeo/sdk";
+import OBR, { buildPath, Command, type Item, type Path, type PathCommand } from "@owlbear-rodeo/sdk";
 import { asset } from "./assets";
 import {
   AREA_ARM,
@@ -104,7 +104,12 @@ function hideSharedLater() {
 
 /** `ok = false` pinta a área de vermelho (fora do alcance). */
 async function drawShape(pts: Pt[], final: boolean, ok = true) {
-  if (drawing) return; // descarta atualizações enquanto a anterior termina
+  // Atualizações de movimento são descartadas enquanto a anterior termina; a final espera a sua vez
+  // (senão o último desenho, o que fica na tela, podia se perder).
+  while (drawing) {
+    if (!final) return;
+    await new Promise((r) => window.setTimeout(r, 15));
+  }
   drawing = true;
   try {
     const cmds: PathCommand[] = pts.map((p, i) =>
@@ -125,8 +130,29 @@ async function drawShape(pts: Pt[], final: boolean, ok = true) {
       .disableHit(true)
       .locked(true)
       .build();
-    if (drawn) await OBR.scene.local.deleteItems([SHAPE_ID]);
-    await OBR.scene.local.addItems([item]);
+    // Atualiza a forma no lugar: apagar e recriar a cada movimento fazia a área piscar (muito visível
+    // no celular, onde o arrasto gera muitos movimentos).
+    let updated = false;
+    if (drawn) {
+      try {
+        await OBR.scene.local.updateItems<Path>([SHAPE_ID], (items) => {
+          for (const it of items) {
+            updated = true;
+            it.commands = cmds;
+            it.style.fillColor = color;
+            it.style.fillOpacity = final ? 0.38 : 0.22;
+            it.style.strokeColor = color;
+            it.style.strokeDash = final ? [] : [14, 8];
+          }
+        });
+      } catch {
+        updated = false;
+      }
+    }
+    if (!updated) {
+      await OBR.scene.local.deleteItems([SHAPE_ID]).catch(() => undefined);
+      await OBR.scene.local.addItems([item]);
+    }
     drawn = true;
     if (final && ok) {
       const msg: AreaShareMsg = { pts };
