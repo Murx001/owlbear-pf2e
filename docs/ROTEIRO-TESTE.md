@@ -446,5 +446,5 @@ A aba **Morrendo** agora também aparece (sem abrir sozinha) **enquanto a pessoa
 3. **Esperado:** o bloco para logo abaixo do cabeçalho fixo (nada fica escondido por ele). Ao **fechar** a engrenagem o painel não rola.
 4. Vale no computador e no celular.
 
-### 72. Tamanho do painel no computador (revertido)
-Um painel maior (620×860 no manifesto e ajuste pela tela) deixou o painel **em branco** na sala. Voltou a 460×700. Antes de tentar aumentar de novo, testar numa sala real com um tamanho só (ex.: 540×760) e conferir que o painel abre com as abas.
+### 72. Painel mais alto no computador
+A largura continua 460. No computador (tela com 900 px ou mais) a altura acompanha a tela (760 a 1000 px); no celular fica 700. O painel em branco que apareceu junto com o primeiro aumento era do anexo das barras ao token (item 70), não do tamanho. Conferir: o painel abre com as abas, ocupa a altura da janela e não cobre a barra de baixo do Owlbear.

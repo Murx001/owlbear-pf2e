@@ -18,7 +18,7 @@ function manifest(): Plugin {
           title: "Owlbear PF2e",
           icon: `${base}icon.svg`,
           popover: `${base}index.html`,
-          height: 700,
+          height: 860,
           width: 460,
         },
       },
