@@ -142,7 +142,7 @@ app.innerHTML = `
   </div>
   <nav class="tabs" id="tabs">
     <button data-tab="agir" class="active"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.5 2.5c.6 3.6 5.2 6 5.2 11a5.7 5.7 0 0 1-11.4 0c0-2.2 1-3.8 2.2-5 .2 1.6.9 2.5 1.9 2.8C10.1 8.2 11.3 5.3 12.5 2.5zM12 20a2.6 2.6 0 0 1-2.6-2.6c0-1.3.8-2.1 1.6-3 .3 1 .8 1.4 1.5 1.6.9-.6 1.5-1.4 1.6-2.4.9.9 1.2 2 1.2 2.9A2.6 2.6 0 0 1 12 20z"/></svg><span>Ação</span></button>
-    <button data-tab="testes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 20.5 7.5v9L12 21.5 3.5 16.5v-9zM12 2.5v19M3.5 7.5 20.5 16.5M20.5 7.5 3.5 16.5"/></svg><span>Testes</span></button>
+    <button data-tab="testes"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3.5"/><circle cx="8.8" cy="8.8" r="1" fill="currentColor"/><circle cx="15.2" cy="8.8" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="8.8" cy="15.2" r="1" fill="currentColor"/><circle cx="15.2" cy="15.2" r="1" fill="currentColor"/></svg><span>Testes</span></button>
     <button data-tab="ficha"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h11a2 2 0 0 1 2 2V20H8a2 2 0 0 1-2-2zM6 18a2 2 0 0 0 2 2M10 8.5h6M10 12.5h6"/></svg><span>Ficha</span></button>
     <button data-tab="combate"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h10M7 20.5h10M8 3.5v4l4 4.5-4 4.5v4M16 3.5v4l-4 4.5 4 4.5v4"/></svg><span>Combate</span></button>
     <button data-tab="morrendo" id="dying-tab" class="dying-tab" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10A4.2 4.2 0 0 1 12 8a4.2 4.2 0 0 1 7.5 2.5c0 5.4-7.5 10-7.5 10zM3 13h4l2-3 3 5 2-3h7"/></svg><span>Morrendo</span></button>
