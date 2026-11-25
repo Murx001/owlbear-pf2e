@@ -821,3 +821,9 @@ li.creature .tpl-sum input.init-val { order: 9; flex: 1 0 100%; width: 100%; max
 
 /* Ao abrir uma engrenagem o painel rola ate o bloco; esta margem deixa espaco para o cabecalho fixo. */
 .reveal-target { scroll-margin-top: 110px; }
+
+/* Aba Combate em tela estreita: as linhas (rolar iniciativa, adicionar criatura) quebram em vez de passar da borda. */
+#tab-combate .import { flex-wrap: wrap; }
+#tab-combate .import select { flex: 1 1 150px; min-width: 0; }
+#tab-combate .import input[placeholder="Criatura"] { flex: 1 1 120px; min-width: 0; }
+#tab-combate .import button { flex: 1 1 auto; min-width: 0; }

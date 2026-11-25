@@ -446,5 +446,10 @@ A aba **Morrendo** agora também aparece (sem abrir sozinha) **enquanto a pessoa
 3. **Esperado:** o bloco para logo abaixo do cabeçalho fixo (nada fica escondido por ele). Ao **fechar** a engrenagem o painel não rola.
 4. Vale no computador e no celular.
 
+### 73. Celular: aba Combate e altura do painel
+1. Aba **Combate** no celular (360 px): "Rolar iniciativa de …", "Adicionar" e o resto cabem na tela, quebrando linha quando precisa; nenhum botão passa da borda.
+2. O painel no celular **não pode ficar mais alto que a tela**: o tamanho de partida no manifesto é 700 (um valor maior empurrava a barra de alvos e as abas para fora da tela, e não dava para posicionar a área da magia). Só no computador a altura cresce, por código.
+3. Conjure uma magia de área no celular e **posicione a área**: a barra com Posicionar área, Alvos à mão e Resolver aparece inteira.
+
 ### 72. Painel mais alto no computador
 A largura continua 460. No computador (tela com 900 px ou mais) a altura acompanha a tela (760 a 1000 px); no celular fica 700. O painel em branco que apareceu junto com o primeiro aumento era do anexo das barras ao token (item 70), não do tamanho. Conferir: o painel abre com as abas, ocupa a altura da janela e não cobre a barra de baixo do Owlbear.
