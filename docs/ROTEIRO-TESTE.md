@@ -431,3 +431,9 @@ A aba **Morrendo** agora também aparece (sem abrir sozinha) **enquanto a pessoa
 1. **Celular:** conjure uma magia de área (cone, linha ou explosão), toque em **Posicionar área** e arraste o dedo pelo mapa. O contorno acompanha o dedo **sem piscar** (antes sumia e voltava a cada movimento). Ao soltar, a área final fica fixa e os alvos são marcados.
 2. Resolva uma magia de área com vários alvos **sem criatura cadastrada** (ex.: 6 tokens soltos): o cartão mostra **um só bloco** "Alvo (6 alvos) — sem dados", e não seis iguais.
 3. Conjure uma magia de um alvo e clique no **próprio token**: o aviso diz "Esse é o token do próprio conjurador". Num token sem ficha nem criatura: "Esse token não tem ficha nem criatura vinculada".
+
+### 70. Barra de PV, escudo e fichinhas acompanham o token ao arrastar
+1. No computador e no celular, **arraste** um token vinculado (criatura ou ficha) devagar pelo mapa, sem soltar.
+2. **Esperado:** a barra de PV, o escudo da CA, o nome e as fichinhas de condição **andam junto com o token o tempo todo**, e não ficam parados até soltar.
+3. Gire o token (se a sala permitir): os textos **não giram** junto. Apague o token: tudo some com ele. Esconda o token: os desenhos também somem.
+4. Se a barra voltar a ficar para trás, anote em que aparelho foi (a sala pode ter recusado o anexo e usado o modo antigo).
