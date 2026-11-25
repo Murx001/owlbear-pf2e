@@ -831,3 +831,43 @@ li.creature .tpl-sum input.init-val { order: 9; flex: 1 0 100%; width: 100%; max
 /* Magias: titulo do rank e bolinhas de espaco na mesma linha, junto das magias daquele rank. */
 .spellhead { display: flex; align-items: center; gap: 10px; min-height: 26px; }
 .spellhead .pips { display: inline-flex; margin: 0; }
+
+/* ---------- visual enxuto no computador (mouse): mesmo estilo, menos espaço vazio ----------
+   Só vale com mouse; no celular os alvos de toque continuam grandes. */
+@media (pointer: fine) {
+  body { padding: 8px; }
+  #app { gap: 6px; height: calc(100vh - 16px); }
+  .panels, .panels > section, #sheet-ficha { gap: 6px; }
+  .tabs { padding: 3px; gap: 3px; }
+  .tabs button { min-height: 32px; font-size: 12px; }
+  .tabs button svg { width: 16px; height: 16px; }
+  .hud { padding: 5px 10px; gap: 4px; }
+  .hud-top { gap: 10px; }
+  .hud-name strong { font-size: 15px; }
+  .hud-name .sub { font-size: 11px; }
+  .hud-ac { width: 38px; height: 45px; }
+  .hud-ac strong { font-size: 16px; }
+  .hud-ac span { font-size: 8px; }
+  .hud-hp .hp-bar { height: 8px; margin-top: 2px; }
+  .block { padding: 5px 10px 7px; }
+  details.block > summary { min-height: 26px; padding-bottom: 3px; }
+  details.block > :not(summary) { margin-top: 5px; }
+  button, select { min-height: 30px; }
+  button { padding: 3px 9px; }
+  input:not([type="checkbox"]) { min-height: 30px; }
+  button.stat { min-height: 30px; }
+  .grid, .import, .chips, .tbtns, .quick, .dice { gap: 5px; }
+  .chips { margin-bottom: 5px; }
+  .attack { margin-bottom: 4px; gap: 5px; }
+  .quick { margin: 4px 0; }
+  .quick button { min-height: 34px; }
+  button.spell { min-height: 0; padding: 2px 9px; }
+  button.pip { width: 20px; height: 20px; }
+  .spellrow { margin-top: 5px; }
+  .spellhead { min-height: 22px; gap: 8px; }
+  .feat-group { margin-top: 5px; }
+  .sub { margin: 1px 0 4px; }
+  .subtabs { margin: 3px 0; }
+  .subtabs button { min-height: 30px; }
+  .manual-toggle { gap: 5px; }
+}

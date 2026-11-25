@@ -141,7 +141,7 @@ app.innerHTML = `
     </div>
   </div>
   <nav class="tabs" id="tabs">
-    <button data-tab="agir" class="active"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20 18 6M14 4h6v6M20 20 6 6M4 10V4h6"/></svg><span>Agir</span></button>
+    <button data-tab="agir" class="active"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.5 2.5c.6 3.6 5.2 6 5.2 11a5.7 5.7 0 0 1-11.4 0c0-2.2 1-3.8 2.2-5 .2 1.6.9 2.5 1.9 2.8C10.1 8.2 11.3 5.3 12.5 2.5zM12 20a2.6 2.6 0 0 1-2.6-2.6c0-1.3.8-2.1 1.6-3 .3 1 .8 1.4 1.5 1.6.9-.6 1.5-1.4 1.6-2.4.9.9 1.2 2 1.2 2.9A2.6 2.6 0 0 1 12 20z"/></svg><span>Ação</span></button>
     <button data-tab="testes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 20.5 7.5v9L12 21.5 3.5 16.5v-9zM12 2.5v19M3.5 7.5 20.5 16.5M20.5 7.5 3.5 16.5"/></svg><span>Testes</span></button>
     <button data-tab="ficha"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h11a2 2 0 0 1 2 2V20H8a2 2 0 0 1-2-2zM6 18a2 2 0 0 0 2 2M10 8.5h6M10 12.5h6"/></svg><span>Ficha</span></button>
     <button data-tab="combate"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h10M7 20.5h10M8 3.5v4l4 4.5-4 4.5v4M16 3.5v4l-4 4.5 4 4.5v4"/></svg><span>Combate</span></button>
@@ -232,15 +232,6 @@ const hudEl = $<HTMLDivElement>("#hud");
 const statusEl = $<HTMLParagraphElement>("#status");
 const pbidEl = $<HTMLInputElement>("#pbid");
 
-/** Bônus extra de uma rolagem (ex.: o mestre concedeu +1 pela interpretação). Vale só para a próxima. */
-let extraValue = "";
-const extraInputs: HTMLInputElement[] = [];
-const extraBonus = () => parseInt(extraValue, 10) || 0;
-function resetExtra() {
-  extraValue = "";
-  for (const i of extraInputs) i.value = "";
-}
-
 const target = () => {
   const n = parseInt(targetValue, 10);
   return Number.isFinite(n) ? n : undefined;
@@ -277,17 +268,15 @@ function rollButton(
   b.append(el("span", "lbl", label), n);
   if (extra) b.append(el("span", "rank", extra));
   b.addEventListener("click", () => {
-    const x = extraBonus();
-    resetExtra();
     if (custom) {
-      custom(value + x);
+      custom(value);
       return;
     }
     void (async () => {
       // Antes de rolar, pergunta e deixa somar ou subtrair um bônus só desta rolagem.
-      const ask = await confirmRoll(title, [`Modificador: ${signed(value + x)}${target() !== undefined ? ` · CD ${target()}` : ""}`]);
+      const ask = await confirmRoll(title, [`Modificador: ${signed(value)}${target() !== undefined ? ` · CD ${target()}` : ""}`]);
       if (!ask.ok) return;
-      const total = x + ask.bonus;
+      const total = ask.bonus;
       const t = total ? `${title} (bônus ${signed(total)})` : title;
       const msg = await publishRoll({ title: t, count: 1, sides: 20, mod: value + total, dc: target() });
       void showCard({ kind: "check", msg });
@@ -804,10 +793,7 @@ async function beginAttack(
   rangeFeet?: number,
   tweak?: DamageEdit,
 ) {
-  // O alvo de um ataque é sempre um token escolhido no mapa; o bônus extra vale para este ataque.
-  const x = extraBonus();
-  resetExtra();
-  bonus += x;
+  // O alvo de um ataque é sempre um token escolhido no mapa.
   const startSelection = ((await OBR.player.getSelection()) ?? []).join(",");
   setTargeting({ kind: "attack", title, bonus, damage, startSelection, consume, rangeFeet, tweak });
 }
@@ -1757,22 +1743,6 @@ function targetField(): HTMLElement {
   return label;
 }
 
-/** Campo "Bônus extra": soma na próxima rolagem e volta a zero. */
-function extraField(): HTMLElement {
-  const label = el("label", "target", "Bônus extra (próxima rolagem) ");
-  const input = el("input");
-  input.type = "number";
-  input.placeholder = "0";
-  input.value = extraValue;
-  input.addEventListener("input", () => {
-    extraValue = input.value;
-    for (const o of extraInputs) if (o !== input) o.value = extraValue;
-  });
-  extraInputs.push(input);
-  label.append(input);
-  return label;
-}
-
 /**
  * Na aba Mestre o cabeçalho da ficha do mestre só atrapalha: some, e mostra nome, PV e CA apenas da
  * criatura em foco (a que ele tocou no mapa).
@@ -1874,7 +1844,6 @@ function renderSheet(c: Character) {
   testesEl.replaceChildren();
   fichaEl.replaceChildren();
   targetInputs.length = 0;
-  extraInputs.length = 0;
   renderHud(c);
 
   const head = el("div", "head-card");
@@ -1896,10 +1865,9 @@ function renderSheet(c: Character) {
   head.append(nums, hpBlock(c));
 
   fichaEl.append(head, tokenBlock(c), conditionsBlock(c), adjustBlock(c));
-  agirEl.append(extraField());
   const shield = shieldRow(c);
   if (shield) agirEl.append(shield);
-  testesEl.append(targetField(), extraField());
+  testesEl.append(targetField());
 
   const abilityNames: [keyof Character["abilities"], string][] = [
     ["str", "FOR"],
@@ -2401,12 +2369,9 @@ let isGmRole = false;
 let pinned = false;
 
 OBR.onReady(async () => {
-  // Painel da esquerda: largura fixa de 460; no computador a altura acompanha a tela (o Owlbear limita
-  // ao que cabe na janela). No celular (tela estreita) fica em 700, que já vira tela cheia.
-  const tall = window.screen.availWidth >= 900;
-  const panelH = tall ? Math.round(Math.min(1000, Math.max(760, window.screen.availHeight - 130))) : 700;
+  // Painel da esquerda: largura fixa de 460. A altura é a do manifesto (700); o Owlbear já limita o painel a
+  // cerca de 70% da janela, então pedir mais altura por código não faz efeito.
   void Promise.resolve(OBR.action?.setWidth?.(460)).catch(() => undefined);
-  void Promise.resolve(OBR.action?.setHeight?.(panelH)).catch(() => undefined);
   // Abrir o painel à mão cancela a espera pelo toque num token (celular).
   void Promise.resolve(OBR.action?.onOpenChange?.((open: boolean) => open && onPanelOpened())).catch(() => undefined);
   listenAttackAcks();

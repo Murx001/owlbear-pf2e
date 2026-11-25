@@ -176,15 +176,15 @@ Limites: durações longas (1 hora, até o descanso) só aparecem como rótulo; 
 
 ### 18. Abas por tarefa e cabeçalho fixo
 **Reinstale a extensão** (o manifest mudou: o painel ficou mais alto, 600 px).
-1. Abas novas: **Agir** (ataques, magias, foco), **Testes** (atributos, salvaguardas, perícias e dados avulsos), **Ficha** (PV, condições, token, importar, descansar), **Combate** e **Mestre** (só o mestre; criaturas, backup e backup). Antes havia Ficha, Combate, Criaturas e Dados.
+1. Abas novas: **Ação** (ataques, magias, foco), **Testes** (atributos, salvaguardas, perícias e dados avulsos), **Ficha** (PV, condições, token, importar, descansar), **Combate** e **Mestre** (só o mestre; criaturas, backup e backup). Antes havia Ficha, Combate, Criaturas e Dados.
 2. **Cabeçalho fixo** em todas as abas: nome, classe, PV com barra, CA e até 4 condições. Tocar nele abre a aba Ficha.
-3. Sem ficha importada, o painel abre na aba Ficha. Com ficha, abre em **Agir**. Selecionar um token vinculado também leva para Agir.
-4. O campo **Alvo (CD/CA)** aparece em Agir e em Testes e é o mesmo valor nos dois.
+3. Sem ficha importada, o painel abre na aba Ficha. Com ficha, abre em **Ação**. Selecionar um token vinculado também leva para Ação.
+4. O campo **Alvo (CD/CA)** aparece em Ação e em Testes e é o mesmo valor nos dois.
 5. A linha de status (erros e resumos) agora fica **na barra de baixo**, visível em qualquer aba.
 6. **Celular ou tablet:** a barra de abas vai para **baixo** da tela. No computador ela fica em cima.
 
 ### 19. Cartão de magia, "Mostrar a todos" e Barreira de Músculos
-1. Na aba **Agir**, **toque numa magia** (por exemplo Fear ou Bless). Abre **no meio da tela** o cartão "o que esta magia faz": rank, tradições, traços, ações (◆ ◆◆ ◆◆◆, reação), alcance, área, alvos, duração, descrição (em inglês, como no Foundry) e uma linha dizendo **o que a extensão automatiza** (ou "Sem automação").
+1. Na aba **Ação**, **toque numa magia** (por exemplo Fear ou Bless). Abre **no meio da tela** o cartão "o que esta magia faz": rank, tradições, traços, ações (◆ ◆◆ ◆◆◆, reação), alcance, área, alvos, duração, descrição (em inglês, como no Foundry) e uma linha dizendo **o que a extensão automatiza** (ou "Sem automação").
 2. **Conjurar** só acontece ao clicar no botão **Conjurar** do cartão: o cartão fecha e o fluxo de sempre começa (alvo, pergunta, cartão de resultado).
 3. O botão discreto **Mostrar a todos** (rodapé, canto direito, em todos os cartões, inclusive ataques e magias): o mesmo cartão aparece no meio da tela de **todos os outros** na sala, com "Mostrado por NOME" e sem o botão Conjurar. Teste com uma janela de jogador.
 4. **Barreira de Músculos** (Muscle Barrier, magia de foco da Linari): Conjurar → escolha o alvo (**pode ser você mesma ou um aliado**, até 30 pés). Concede **20 PV temporários** (10 base + 10 por rank acima do 1º; magia de foco no nível 4 = rank 2). Os PV temporários **não acumulam** (vale o maior). O cartão mostra "PV temporários +20". O +1 de Atletismo e a perda do servo (thrall) ficam com você.
@@ -199,7 +199,7 @@ Limites: durações longas (1 hora, até o descanso) só aparecem como rótulo; 
 
 ### 21. Tocar no token de uma criatura (mestre)
 1. Com criaturas vinculadas a tokens, **toque num token de criatura** no mapa (como mestre). O painel vai sozinho para a aba **Mestre**, rola até o cartão dessa criatura em **Em jogo**, destaca com um contorno roxo por uns segundos e **abre a ficha completa** dela (traços, números, defesas, ataques, notas).
-2. Tocar no token de um **jogador** continua abrindo a ficha dele na aba Agir.
+2. Tocar no token de um **jogador** continua abrindo a ficha dele na aba Ação.
 3. Em **Em jogo**, cada criatura também tem "Ficha completa" para abrir e fechar à mão. A escolha fica lembrada enquanto o painel está aberto.
 
 ### 22. Histórico na barra da direita (todos)
@@ -229,7 +229,7 @@ Confira nos dois painéis e nos cartões: fundo escuro com detalhes dourados, t�
 ### 26. PV dentro da barra, CA no escudinho e bônus de CA
 1. No token vinculado, os **PV em números** ficam **dentro da barra** (ex.: "12/48 +5" com PV temporários). Sob o token fica só o nome.
 2. A **CA** aparece num **escudinho ao lado esquerdo** do token (as fichinhas de condição continuam à direita). Nas criaturas, só o mestre vê o escudo; os jogadores nunca veem a CA.
-3. **Erguer o escudo:** quem tem escudo na ficha (Pathbuilder) vê, na aba Agir, o botão "Erguer o escudo (CA +N)". Ao usar, a CA sobe N (no cabeçalho, na ficha e no escudinho), aparece a fichinha "Escudo erguido" e o bônus **cai no início do seu próximo turno** (na aba Combate). Clicar de novo abaixa o escudo.
+3. **Erguer o escudo:** quem tem escudo na ficha (Pathbuilder) vê, na aba Ação, o botão "Erguer o escudo (CA +N)". Ao usar, a CA sobe N (no cabeçalho, na ficha e no escudinho), aparece a fichinha "Escudo erguido" e o bônus **cai no início do seu próximo turno** (na aba Combate). Clicar de novo abaixa o escudo.
 4. **Truque Escudo (Shield):** ao lançar (Linari tem preparado), a CA sobe **+1** até o início do seu próximo turno. Bônus de circunstância **não acumulam**: com o escudo erguido (+2) e a magia (+1) vale o maior (+2).
 5. Condições continuam mexendo na CA: Desprevenido/Caído −2 (circunstância, soma com o bônus do escudo), Amedrontado/Fatigado (status).
 6. Um ataque contra o personagem usa a CA **já com** o escudo.
@@ -238,8 +238,8 @@ Confira nos dois painéis e nos cartões: fundo escuro com detalhes dourados, t�
 Na grade, uma **emanação de 10 pés** cobre **2 casas** em volta do conjurador (um quadrado); a 3ª casa fica de fora. Teste com a Necrotic Bomb: um token **colado** (5 pés) e um a **2 casas** (10 pés) são atingidos; a **3ª casa** (15 pés) e a diagonal da 3ª casa **não**. O conjurador não é atingido. Uma **explosão de 20 pés** cobre 4 casas a partir do centro; a 5ª fica de fora.
 
 ### 28. Bônus extra e ajustes manuais
-1. O campo **Alvo (CD/CA)** saiu da aba Agir: ataques escolhem o alvo pelo **token** no mapa. Na aba **Testes** ele virou **CD do teste** (opcional), para testes de perícia contra uma CD.
-2. **Bônus extra (próxima rolagem)** está em Agir e em Testes (é o mesmo campo). Digite, por exemplo, +2 (ou −1) e role: o bônus entra **só nessa rolagem** e o campo volta a zero. Em testes, o cartão mostra "(bônus extra +2)".
+1. O campo **Alvo (CD/CA)** saiu da aba Ação: ataques escolhem o alvo pelo **token** no mapa. Na aba **Testes** ele virou **CD do teste** (opcional), para testes de perícia contra uma CD.
+2. O campo **Bônus extra (próxima rolagem)** foi removido (redundante). O bônus de uma rolagem agora é só o **"Bônus nesta rolagem"** (− / +) da caixa "deseja rolar?", que aparece antes de qualquer teste ou ataque. Confira que ele existe e soma só nessa rolagem. Em testes, o cartão mostra "(bônus +2)".
 3. Na aba **Ficha**, o bloco **Ajustes manuais** corrige dados: **Ajuste de CA** (ex.: +1 num lugar que dá bônus de defesa) e **Ajuste de PV máximo**. Mudam a CA no cabeçalho, na ficha, no escudinho do token e a CA usada contra ataques. Apagar o número desfaz o ajuste.
 
 ### 29. Área visível a todos, escudo no canto e toque no token (mestre)
@@ -252,7 +252,7 @@ Na grade, uma **emanação de 10 pés** cobre **2 casas** em volta do conjurador
 2. Na aba **Mestre**, em **Em jogo**, aparece um aviso vermelho quando há tokens ligados a criaturas que **não existem neste navegador** (causa do erro "sem dados cadastrados"). O botão **Desvincular esses tokens** limpa o vínculo para vincular de novo a partir do bestiário.
 
 ### 31. Dano personalizado por arma e contador de bônus antes de rolar
-1. Em **Agir > Ataques**, cada arma tem uma engrenagem **⚙**. Ela abre o editor de **modos de dano**: o primeiro é o da ficha; use **+ Novo modo** para criar outros (por exemplo "Duas mãos" 1d12+3, ou "Com Ikon" 1d12+5), com nome e fórmula (`1d12+5 slashing`). Marque o círculo do modo em uso.
+1. Em **Ação > Ataques**, cada arma tem uma engrenagem **⚙**. Ela abre o editor de **modos de dano**: o primeiro é o da ficha; use **+ Novo modo** para criar outros (por exemplo "Duas mãos" 1d12+3, ou "Com Ikon" 1d12+5), com nome e fórmula (`1d12+5 slashing`). Marque o círculo do modo em uso.
 2. O botão **Dano** mostra a fórmula do modo em uso e rola esse dano. O **ataque aplica o dano do modo escolhido sozinho** ao acertar, inclusive o dobro no crítico. Fórmula inválida mostra um aviso e não é salva.
 3. **Perícias, atributos, salvaguardas e Percepção** agora **perguntam antes de rolar** e têm um **contador de bônus** (− e +, ou digite) para somar ou subtrair só naquela rolagem. O mesmo contador está na confirmação de ataque. O cartão mostra "(bônus +2)".
 
@@ -334,8 +334,8 @@ Em Mestre > cada criatura > **Ataques**, cada ataque tem a mesma linha da ficha 
 ### 51. Barra de PV e escudo da CA reposicionados
 Sobre o token, a **barra de PV** agora é uma **pílula** (cantos arredondados) um pouco mais estreita que o token, com os números dentro, encostada na borda de baixo; o **nome** fica logo abaixo dela. O **escudo da CA** (mesma cor e formato) fica no **canto inferior direito**, sobre a borda do token, logo acima da ponta da barra. Cores da barra (verde/amarelo/vermelho) e dos PV temporários não mudaram.
 
-### 52. Manobras (aba no Agir)
-Em **Agir**, duas abas: **Ataques e magias** e **Manobras**. Em Manobras: **Agarrar** (Atletismo vs Fortitude → Agarrado/Contido), **Derrubar** (Atletismo vs Reflexos → Caído; falha crítica: você cai), **Empurrar** (Atletismo vs Fortitude), **Desarmar** (Atletismo vs Reflexos), **Amedrontar** (Intimidação vs Vontade → Amedrontado 1/2) e **Fintar** (Enganação vs Percepção → Desprevenido). Toque na manobra, depois no token do alvo (jogador ou criatura): aparece a tela "deseja rolar os dados?" (bônus nesta rolagem; MAP normal/sem MAP/conta como 2 nas manobras de ataque), o sistema rola a perícia contra a **CD do alvo** (10 + salvaguarda/Percepção; criaturas do mestre não revelam a CD) e aplica as condições do grau de sucesso, com duração (Agarrar/Fintar: até o fim do seu próximo turno). Efeitos em você (cair ao falhar criticamente) vão para a sua ficha. A tela de confirmação é a mesma de todas as rolagens (inclui "Inimigo flanqueado", que não muda a CD de manobras). Cartão com teste, efeito e condições.
+### 52. Manobras (aba no Ação)
+Em **Ação**, duas abas: **Ataques e magias** e **Manobras**. Em Manobras: **Agarrar** (Atletismo vs Fortitude → Agarrado/Contido), **Derrubar** (Atletismo vs Reflexos → Caído; falha crítica: você cai), **Empurrar** (Atletismo vs Fortitude), **Desarmar** (Atletismo vs Reflexos), **Amedrontar** (Intimidação vs Vontade → Amedrontado 1/2) e **Fintar** (Enganação vs Percepção → Desprevenido). Toque na manobra, depois no token do alvo (jogador ou criatura): aparece a tela "deseja rolar os dados?" (bônus nesta rolagem; MAP normal/sem MAP/conta como 2 nas manobras de ataque), o sistema rola a perícia contra a **CD do alvo** (10 + salvaguarda/Percepção; criaturas do mestre não revelam a CD) e aplica as condições do grau de sucesso, com duração (Agarrar/Fintar: até o fim do seu próximo turno). Efeitos em você (cair ao falhar criticamente) vão para a sua ficha. A tela de confirmação é a mesma de todas as rolagens (inclui "Inimigo flanqueado", que não muda a CD de manobras). Cartão com teste, efeito e condições.
 
 ### 53. Aba Morrendo (só fichas de jogador)
 Quando um jogador chega a **0 PV** (por ataque, magia ou pelo botão Dano), a aba **Morrendo** aparece sozinha e abre: ele fica **Inconsciente** e **Morrendo 1** (+ o valor de **Ferido**). Na aba: contadores **Morrendo / Ferido / Condenado** com − e + (correções); **Teste de recuperação (CD 10 + Morrendo)**, no início do turno, com a caixa de confirmação (sucesso crítico −2, sucesso −1, falha +1, falha crítica +2; ao chegar a 0 estabiliza e ganha Ferido); **Levou dano com 0 PV** (+1) e **Dano crítico** (+2); **Estabilizar** (Primeiros Socorros/Medicina, sem Ferido); **Recuperação heroica** (sem Ferido; os Pontos de Herói não são contados pela ficha); **Curar** (acima de 0 PV: perde Morrendo e Inconsciente e ganha Ferido 1 ou +1; a aba some). Morre ao chegar a **Morrendo 4**, ou menos com **Condenado** (4 − Condenado); há **Desfazer a morte**. Dano em quem está estabilizado volta a deixá-lo Morrendo. Criaturas do mestre não usam isso.
@@ -441,13 +441,13 @@ A aba **Morrendo** agora também aparece (sem abrir sozinha) **enquanto a pessoa
 4. Se a barra voltar a ficar para trás, anote em que aparelho foi (a sala pode ter recusado o anexo e usado o modo antigo).
 
 ### 71. Engrenagem rola sozinha até o conteúdo
-1. **Aba Agir:** na ⚙ do dano de uma arma (principalmente as de baixo), o painel rola até a arma e o editor de dano aparece, sem rolar à mão.
+1. **Aba Ação:** na ⚙ do dano de uma arma (principalmente as de baixo), o painel rola até a arma e o editor de dano aparece, sem rolar à mão.
 2. **Aba Mestre:** na ⚙ de uma criatura em jogo, o painel rola até o cartão da criatura, e as opções de Cena e "Visível aos jogadores" ficam à vista. Na ⚙ de uma cena (renomear/excluir) acontece o mesmo.
 3. **Esperado:** o bloco para logo abaixo do cabeçalho fixo (nada fica escondido por ele). Ao **fechar** a engrenagem o painel não rola.
 4. Vale no computador e no celular.
 
 ### 74. Magias: bolinhas de espaço junto das magias de cada rank
-Na aba Agir, em "Magias — …", cada rank mostra o título e as **bolinhas de espaço na mesma linha** ("RANK 1 ●●"), com as magias daquele rank logo abaixo. Tocar numa bolinha marca ou desmarca um espaço usado. Truques não têm bolinhas. Um rank com espaços mas sem magia preparada (ex.: rank 3 vazio) aparece só com a linha de bolinhas, depois dos outros. Conjurar uma magia de rank 1 gasta uma bolinha da linha "RANK 1".
+Na aba Ação, em "Magias — …", cada rank mostra o título e as **bolinhas de espaço na mesma linha** ("RANK 1 ●●"), com as magias daquele rank logo abaixo. Tocar numa bolinha marca ou desmarca um espaço usado. Truques não têm bolinhas. Um rank com espaços mas sem magia preparada (ex.: rank 3 vazio) aparece só com a linha de bolinhas, depois dos outros. Conjurar uma magia de rank 1 gasta uma bolinha da linha "RANK 1".
 
 ### 73. Celular: aba Combate e altura do painel
 1. Aba **Combate** no celular (360 px): "Rolar iniciativa de …", "Adicionar" e o resto cabem na tela, quebrando linha quando precisa; nenhum botão passa da borda.
