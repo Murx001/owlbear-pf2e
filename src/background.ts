@@ -434,17 +434,10 @@ async function sync() {
 
     await OBR.scene.local.deleteItems(idsFor(o.tokenId));
     await deleteTags(o.tokenId);
-    // Anexa tudo ao token: o Owlbear move barra, escudo e fichinhas junto com ele durante o arrasto
-    // (sem isso, eles ficavam parados e só "teleportavam" ao soltar). A rotação não acompanha, para
-    // o texto não girar. Se a sala recusar o anexo, desenha solto como antes.
-    try {
-      await OBR.scene.local.addItems(
-        items.map((it) => ({ ...it, attachedTo: o.tokenId, disableAttachmentBehavior: ["ROTATION", "COPY"] as ("ROTATION" | "COPY")[] })),
-      );
-    } catch {
-      await OBR.scene.local.deleteItems(items.map((it) => it.id)).catch(() => undefined);
-      await OBR.scene.local.addItems(items);
-    }
+    // Os itens ficam soltos (sem `attachedTo`): anexá-los ao token fez as barras sumirem e travou a
+    // página da extensão numa sala com vários tokens (o painel ficou preto). Seguir o token durante o
+    // arrasto precisa de outra abordagem, testada numa sala real antes de publicar.
+    await OBR.scene.local.addItems(items);
     drawn.set(o.tokenId, key);
   }
 
