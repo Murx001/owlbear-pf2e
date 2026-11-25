@@ -4,6 +4,7 @@ import "./style.css";
 import "./theme.css";
 import type { Attack, Character, GearItem, Stat } from "./character";
 import { parseDamage } from "./damage";
+import { revealSoon } from "./reveal";
 import { creatureAc, getCreature, type Creature, type CreatureAbility } from "./creatures";
 import { cancelCreatureAttack, creatureAttackSelection, setCreatureConfirm, watchCreatureAttack } from "./creatureAttack";
 import { abilityCast } from "./creatureAbility";
@@ -1950,11 +1951,16 @@ function renderSheet(c: Character) {
       gear.type = "button";
       gear.title = "Personalizar o dano desta arma";
       gear.addEventListener("click", () => {
-        dmgOpen.has(a.name) ? dmgOpen.delete(a.name) : dmgOpen.add(a.name);
+        const opening = !dmgOpen.has(a.name);
+        if (opening) dmgOpen.add(a.name);
+        else dmgOpen.delete(a.name);
         if (current) renderSheet(current);
+        // Ao abrir, rola até a arma: o editor de dano aparece sem precisar rolar à mão.
+        if (opening) revealSoon(() => document.querySelector(`div[data-weapon="${CSS.escape(a.name)}"]`));
       });
       row.append(atk, dmg, gear);
       const wrap = el("div");
+      wrap.dataset.weapon = a.name;
       wrap.append(row);
       if (dmgOpen.has(a.name)) wrap.append(damageEditor(c, a));
       return wrap;
@@ -2377,9 +2383,13 @@ let isGmRole = false;
 let pinned = false;
 
 OBR.onReady(async () => {
-  // Painel da esquerda um pouco maior (o manifesto traz o mesmo tamanho para quem ainda não recarregou).
-  void Promise.resolve(OBR.action?.setWidth?.(460)).catch(() => undefined);
-  void Promise.resolve(OBR.action?.setHeight?.(700)).catch(() => undefined);
+  // Painel da esquerda: no computador ocupa uma boa parte da tela (o Owlbear limita ao que cabe na
+  // janela); no celular (tela estreita) mantém o tamanho antigo, que já vira tela cheia.
+  const wide = window.screen.availWidth >= 900;
+  const panelW = wide ? Math.round(Math.min(760, Math.max(580, window.screen.availWidth * 0.38))) : 460;
+  const panelH = wide ? Math.round(Math.min(1000, Math.max(760, window.screen.availHeight - 120))) : 700;
+  void Promise.resolve(OBR.action?.setWidth?.(panelW)).catch(() => undefined);
+  void Promise.resolve(OBR.action?.setHeight?.(panelH)).catch(() => undefined);
   // Abrir o painel à mão cancela a espera pelo toque num token (celular).
   void Promise.resolve(OBR.action?.onOpenChange?.((open: boolean) => open && onPanelOpened())).catch(() => undefined);
   listenAttackAcks();

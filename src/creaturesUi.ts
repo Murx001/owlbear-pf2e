@@ -34,6 +34,7 @@ import {
 } from "./creatures";
 import OBR from "@owlbear-rodeo/sdk";
 import { isPhone, whenTokenTapped } from "./tokenTap";
+import { revealSoon } from "./reveal";
 import {
   NO_GROUP,
   allGroups,
@@ -1226,6 +1227,7 @@ export function initCreatures(
   function sceneCard(name: string, members: Creature[], sceneNames: string[]): HTMLElement {
     const loose = name === NO_SCENE;
     const li = el("li", "creature scene-card");
+    li.dataset.scene = name;
     const card = el("details", "cr-card");
     card.open = openScenes.has(name);
     card.addEventListener("toggle", () => {
@@ -1263,9 +1265,12 @@ export function initCreatures(
       add.setAttribute("aria-label", `Adicionar criatura à cena ${name}`);
       sum.append(add);
       sum.append(summaryButton("⚙", () => {
-        sceneGear.has(name) ? sceneGear.delete(name) : sceneGear.add(name);
+        const opening = !sceneGear.has(name);
+        if (opening) sceneGear.add(name);
+        else sceneGear.delete(name);
         openScenes.add(name);
         render();
+        if (opening) revealSoon(() => document.querySelector(`li[data-scene="${CSS.escape(name)}"]`));
       }, "gear"));
     }
     card.append(sum);
@@ -1395,7 +1400,15 @@ export function initCreatures(
       sum.append(iv);
     }
     sum.append(
-      summaryButton("⚙", () => { gearOpen.has(c.id) ? gearOpen.delete(c.id) : gearOpen.add(c.id); openCreatures.add(c.id); render(); }, "gear"),
+      summaryButton("⚙", () => {
+        const opening = !gearOpen.has(c.id);
+        if (opening) gearOpen.add(c.id);
+        else gearOpen.delete(c.id);
+        openCreatures.add(c.id);
+        render();
+        // Ao abrir, o painel já rola até a criatura (sem precisar rolar à mão).
+        if (opening) revealSoon(() => document.querySelector(`li[data-cid="${c.id}"]`));
+      }, "gear"),
       trashButton(
         "Desvincular do token e remover",
         async () => {

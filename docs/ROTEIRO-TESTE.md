@@ -437,3 +437,12 @@ A aba **Morrendo** agora também aparece (sem abrir sozinha) **enquanto a pessoa
 2. **Esperado:** a barra de PV, o escudo da CA, o nome e as fichinhas de condição **andam junto com o token o tempo todo**, e não ficam parados até soltar.
 3. Gire o token (se a sala permitir): os textos **não giram** junto. Apague o token: tudo some com ele. Esconda o token: os desenhos também somem.
 4. Se a barra voltar a ficar para trás, anote em que aparelho foi (a sala pode ter recusado o anexo e usado o modo antigo).
+
+### 71. Engrenagem rola sozinha até o conteúdo
+1. **Aba Agir:** na ⚙ do dano de uma arma (principalmente as de baixo), o painel rola até a arma e o editor de dano aparece, sem rolar à mão.
+2. **Aba Mestre:** na ⚙ de uma criatura em jogo, o painel rola até o cartão da criatura, e as opções de Cena e "Visível aos jogadores" ficam à vista. Na ⚙ de uma cena (renomear/excluir) acontece o mesmo.
+3. **Esperado:** o bloco para logo abaixo do cabeçalho fixo (nada fica escondido por ele). Ao **fechar** a engrenagem o painel não rola.
+4. Vale no computador e no celular.
+
+### 72. Tamanho do painel no computador
+O painel abre maior no computador (cerca de 38% da largura da tela, 580–760 px, e quase a altura toda, 760–1000 px). No celular continua como antes.

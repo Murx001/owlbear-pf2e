@@ -818,3 +818,6 @@ li.creature .tpl-sum input.init-val { order: 9; flex: 1 0 100%; width: 100%; max
   }
   .attack:has(> button.gear) > button { min-width: 0; }
 }
+
+/* Ao abrir uma engrenagem o painel rola ate o bloco; esta margem deixa espaco para o cabecalho fixo. */
+.reveal-target { scroll-margin-top: 110px; }
