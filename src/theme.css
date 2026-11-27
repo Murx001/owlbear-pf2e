@@ -871,3 +871,12 @@ li.creature .tpl-sum input.init-val { order: 9; flex: 1 0 100%; width: 100%; max
   .subtabs button { min-height: 30px; }
   .manual-toggle { gap: 5px; }
 }
+.hud-name-button {
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}

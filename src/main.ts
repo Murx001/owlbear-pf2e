@@ -1798,7 +1798,55 @@ function renderHud(c: Character) {
   const ac = acWithConditions(baseAc(c), state.conditions);
 
   const who = el("div", "hud-name");
-  who.append(el("strong", undefined, c.name), el("span", "sub", `${c.className} ${c.level}`));
+  const nameButton = document.createElement("button");
+  nameButton.type = "button";
+  nameButton.className = "hud-name-button";
+  nameButton.textContent = c.name;
+  nameButton.title = "clique para editar o nome";
+  nameButton.addEventListener("click", () => {
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = c.name;
+    input.maxLength = 60;
+
+    let finished = false;
+
+    const finish = (save: boolean) => {
+      if (finished) return;
+      finished = true;
+
+      const newName = input.value.trim();
+      if (save && newName) {
+        c.name = newName;
+
+        if (c.pathbuilderId) {
+          state = { ...state, displayName: newName };
+          void saveState(c.pathbuilderId, state).catch(() => {
+            say("Não foi possível salvar o nome da ficha.", true);
+          });
+        }
+      }
+
+      renderHud(c);
+    };
+
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        input.blur();
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        finish(false);
+      }
+    });
+
+    input.addEventListener("blur", () => finish(true));
+
+    nameButton.replaceWith(input);
+    input.focus();
+    input.select();
+  });
+  who.append(nameButton, el("span", "sub", `${c.className} ${c.level}`));
 
   const mid = el("div", "hud-hp");
   mid.append(el("span", undefined, `${hp}/${max} PV${state.temp ? ` (+${state.temp})` : ""}`));
@@ -2333,6 +2381,7 @@ async function importById(id: string) {
     store.set(id);
     const stored = await loadState(id).catch(() => undefined);
     state = stored ?? newState(c);
+    if (stored?.displayName?.trim()) c.name = stored.displayName.trim();
     lastHp = state.hp;
     // Garante PV máx. e CA no estado e grava na sala: sem isso, o token vinculado não mostra a barra.
     state.baseAc = baseAc(c);
@@ -2474,6 +2523,7 @@ OBR.onReady(async () => {
     const incoming = id ? all[id] : undefined;
     if (!current || !incoming || JSON.stringify(incoming) === JSON.stringify(state)) return;
     state = incoming;
+    if (incoming.displayName?.trim()) current.name = incoming.displayName.trim();
     lastHp = state.hp;
     const scroll = $("#tab-ficha").parentElement!.scrollTop;
     renderSheet(current);

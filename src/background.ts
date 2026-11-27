@@ -127,7 +127,7 @@ async function collectOverlays(): Promise<Overlay[]> {
       out.push({
         tokenId: token.id,
         visible: token.visible,
-        name: pc.name,
+        name: st.displayName?.trim() || pc.name,
         line: "",
         barText: `${hp}/${st.max}${st.temp ? ` +${st.temp}` : ""}`,
         ac: st.ac,

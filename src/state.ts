@@ -7,6 +7,7 @@ import { hitWhileDown, settle } from "./dying";
 const KEY = "com.owlbear-pf2e/state";
 
 export interface CharState {
+  displayName?: string;
   hp: number;
   temp: number;
   /** PV máximo efetivo (já com Drenado). Usado pela barra sobre o token. */
