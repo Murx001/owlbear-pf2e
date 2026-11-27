@@ -1803,11 +1803,13 @@ function renderHud(c: Character) {
   nameButton.className = "hud-name-button";
   nameButton.textContent = c.name;
   nameButton.title = "clique para editar o nome";
-  nameButton.addEventListener("click", () => {
+  nameButton.addEventListener("click", (event) => {
+    event.stopPropagation();
     const input = document.createElement("input");
     input.type = "text";
     input.value = c.name;
     input.maxLength = 60;
+    input.addEventListener("click", (inputEvent) => inputEvent.stopPropagation());
 
     let finished = false;
 
