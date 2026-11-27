@@ -1805,6 +1805,7 @@ function renderHud(c: Character) {
   nameButton.title = "clique para editar o nome";
   nameButton.addEventListener("click", (event) => {
     event.stopPropagation();
+    event.preventDefault();
     const input = document.createElement("input");
     input.type = "text";
     input.value = c.name;
